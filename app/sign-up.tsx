@@ -1,3 +1,4 @@
+import { account, ID } from "@/lib/appwrite";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -11,7 +12,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { account, ID } from "@/lib/appwrite";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -463,6 +463,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     marginBottom: 18,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.6,
   },
   primaryButtonText: {
     color: "#FFFFFF",

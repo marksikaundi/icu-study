@@ -1,3 +1,4 @@
+import { account } from "@/lib/appwrite";
 import { Feather, FontAwesome } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
@@ -12,7 +13,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { account } from "@/lib/appwrite";
 
 export default function HomeScreen() {
   const router = useRouter();
