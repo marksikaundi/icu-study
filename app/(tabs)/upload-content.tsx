@@ -9,8 +9,9 @@ import {
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   SafeAreaView,
@@ -23,8 +24,12 @@ import {
 
 export default function UploadContentScreen() {
   const categories = ["Materials", "Resources", "Assignments", "Notes"];
+  const tags = useMemo(() => ["Engineering", "Humanities", "Education"], []);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState(categories[0]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([
+    categories[0],
+  ]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<
     | {
@@ -35,6 +40,7 @@ export default function UploadContentScreen() {
     | undefined
   >();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handlePickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -69,15 +75,22 @@ export default function UploadContentScreen() {
       return;
     }
 
-    if (!category.trim()) {
-      Alert.alert("Missing category", "Select a category for this content.");
+    if (!selectedCategories.length) {
+      Alert.alert("Missing category", "Select at least one category.");
       return;
     }
 
-    if (!isConfigured(APPWRITE_IDS.collections.materials)) {
+    const primaryCategory = selectedCategories[0];
+    const collectionKey = primaryCategory.toLowerCase();
+    const collectionId =
+      APPWRITE_IDS.collections[
+        collectionKey as keyof typeof APPWRITE_IDS.collections
+      ];
+
+    if (!collectionId || !isConfigured(collectionId)) {
       Alert.alert(
         "Not configured",
-        "Set the materials collection ID in lib/appwrite-ids.ts",
+        `Set the ${primaryCategory.toLowerCase()} collection ID in lib/appwrite-ids.ts`,
       );
       return;
     }
@@ -93,7 +106,12 @@ export default function UploadContentScreen() {
     setIsSubmitting(true);
     const upload = async () => {
       try {
-        const fileInput = InputFile.fromPath(file.uri, file.name);
+        let fileInput: File;
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
+        fileInput = new File([blob], file.name, {
+          type: file.type ?? blob.type ?? "application/octet-stream",
+        });
         const permissions = [
           Permission.read(Role.users()),
           Permission.write(Role.users()),
@@ -103,28 +121,41 @@ export default function UploadContentScreen() {
           ID.unique(),
           fileInput,
           permissions,
+          (progress) => {
+            const percent = Math.round((progress.progress ?? 0) * 100);
+            setUploadProgress(percent);
+          },
         );
+
+        const payload: Record<string, string | string[]> = {
+          title: title.trim(),
+          description: description.trim(),
+          categories: selectedCategories,
+          tags: selectedTags,
+          fileId: created.$id,
+          fileName: created.name,
+          type: file.type ?? "File",
+        };
+
+        if (collectionKey === "notes") {
+          payload.body = description.trim();
+        }
 
         await databases.createDocument(
           APPWRITE_IDS.databaseId,
-          APPWRITE_IDS.collections.materials,
+          collectionId,
           ID.unique(),
-          {
-            title: title.trim(),
-            description: description.trim(),
-            categories: category.trim(),
-            fileId: created.$id,
-            fileName: created.name,
-            type: file.type ?? "File",
-          },
+          payload,
           permissions,
         );
 
         Alert.alert("Uploaded", "Your content has been submitted.");
         setTitle("");
-        setCategory("");
+        setSelectedCategories([categories[0]]);
+        setSelectedTags([]);
         setDescription("");
         setFile(undefined);
+        setUploadProgress(0);
       } catch (error) {
         const message =
           typeof error === "object" && error && "message" in error
@@ -167,16 +198,55 @@ export default function UploadContentScreen() {
             {categories.map((item) => (
               <Pressable
                 key={item}
-                onPress={() => setCategory(item)}
+                onPress={() => {
+                  setSelectedCategories((current) =>
+                    current.includes(item)
+                      ? current.filter((value) => value !== item)
+                      : [...current, item],
+                  );
+                }}
                 style={[
                   styles.categoryChip,
-                  category === item ? styles.categoryChipActive : null,
+                  selectedCategories.includes(item)
+                    ? styles.categoryChipActive
+                    : null,
                 ]}
               >
                 <Text
                   style={[
                     styles.categoryText,
-                    category === item ? styles.categoryTextActive : null,
+                    selectedCategories.includes(item)
+                      ? styles.categoryTextActive
+                      : null,
+                  ]}
+                >
+                  {item}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Tags</Text>
+          <View style={styles.categoryRow}>
+            {tags.map((item) => (
+              <Pressable
+                key={item}
+                onPress={() => {
+                  setSelectedTags((current) =>
+                    current.includes(item)
+                      ? current.filter((value) => value !== item)
+                      : [...current, item],
+                  );
+                }}
+                style={[
+                  styles.tagChip,
+                  selectedTags.includes(item) ? styles.tagChipActive : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.tagText,
+                    selectedTags.includes(item) ? styles.tagTextActive : null,
                   ]}
                 >
                   {item}
@@ -210,11 +280,25 @@ export default function UploadContentScreen() {
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
-            <Feather name="upload" size={16} color="#FFFFFF" />
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Feather name="upload" size={16} color="#FFFFFF" />
+            )}
             <Text style={styles.submitText}>
               {isSubmitting ? "Uploading" : "Upload"}
             </Text>
           </Pressable>
+          {isSubmitting ? (
+            <View style={styles.progressRow}>
+              <View style={styles.progressTrack}>
+                <View
+                  style={[styles.progressFill, { width: `${uploadProgress}%` }]}
+                />
+              </View>
+              <Text style={styles.progressText}>{uploadProgress}%</Text>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -285,6 +369,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
+  progressRow: {
+    marginTop: 10,
+    gap: 6,
+  },
+  progressTrack: {
+    height: 6,
+    backgroundColor: "#E1E3EE",
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#34356E",
+  },
+  progressText: {
+    fontSize: 11,
+    color: "#7A7D92",
+    textAlign: "right",
+  },
   categoryRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -305,6 +408,23 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   categoryTextActive: {
+    color: "#FFFFFF",
+  },
+  tagChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: "#E8ECFF",
+  },
+  tagChipActive: {
+    backgroundColor: "#34356E",
+  },
+  tagText: {
+    fontSize: 12,
+    color: "#2D2E3A",
+    fontWeight: "600",
+  },
+  tagTextActive: {
     color: "#FFFFFF",
   },
   fileButton: {
