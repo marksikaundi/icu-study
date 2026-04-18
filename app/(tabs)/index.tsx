@@ -84,9 +84,7 @@ export default function DashboardScreen() {
         <View style={styles.quickRow}>
           {quickLinks.map((item) => (
             <Pressable key={item.label} style={styles.quickItem}>
-              <View
-                style={[styles.quickIcon, { backgroundColor: item.color }]}
-              >
+              <View style={[styles.quickIcon, { backgroundColor: item.color }]}>
                 <Feather name={item.icon} size={18} color="#2D2E3A" />
               </View>
               <Text style={styles.quickLabel}>{item.label}</Text>
@@ -97,7 +95,9 @@ export default function DashboardScreen() {
         <View style={styles.heroCard}>
           <View>
             <Text style={styles.heroTitle}>Check your leader board</Text>
-            <Text style={styles.heroSubtitle}>Track your ranking this week</Text>
+            <Text style={styles.heroSubtitle}>
+              Track your ranking this week
+            </Text>
           </View>
           <Pressable style={styles.heroAction}>
             <Text style={styles.heroActionText}>View</Text>
