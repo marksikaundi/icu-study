@@ -1,4 +1,4 @@
-import { Feather, FontAwesome } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import {
   Alert,
@@ -12,13 +12,24 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
-export default function HomeScreen() {
+export default function SignUpScreen() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState<
+    {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    }
+  >({});
   const gridLines = useMemo(
     () => Array.from({ length: 6 }, (_, index) => index),
     [],
@@ -27,7 +38,21 @@ export default function HomeScreen() {
   const validateEmail = (value: string) => /\S+@\S+\.\S+/.test(value.trim());
 
   const validateForm = () => {
-    const nextErrors: { email?: string; password?: string } = {};
+    const nextErrors: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    } = {};
+
+    if (!firstName.trim()) {
+      nextErrors.firstName = "First name is required.";
+    }
+
+    if (!lastName.trim()) {
+      nextErrors.lastName = "Last name is required.";
+    }
 
     if (!email.trim()) {
       nextErrors.email = "Email is required.";
@@ -41,16 +66,22 @@ export default function HomeScreen() {
       nextErrors.password = "Password must be at least 6 characters.";
     }
 
+    if (!confirmPassword) {
+      nextErrors.confirmPassword = "Confirm your password.";
+    } else if (confirmPassword !== password) {
+      nextErrors.confirmPassword = "Passwords do not match.";
+    }
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleLogin = () => {
+  const handleSignUp = () => {
     if (!validateForm()) {
       return;
     }
 
-    Alert.alert("Success", "Logged in successfully.");
+    Alert.alert("Success", "Account created successfully.");
   };
 
   return (
@@ -87,26 +118,65 @@ export default function HomeScreen() {
             <Feather name="arrow-left" size={18} color="#D8E6E9" />
           </Pressable>
           <Text style={styles.headerTitle}>
-            Go ahead and complete your account and setup
+            Sign up now to access your personal account
           </Text>
           <Text style={styles.headerSubtitle}>
-            Create your account and simplify your workflow instantly.
+            Sign up to access your account and exclusive features.
           </Text>
         </View>
 
         <View style={styles.card}>
           <View style={styles.segment}>
-            <Pressable style={[styles.segmentButton, styles.segmentActive]}>
-              <Text style={[styles.segmentText, styles.segmentActiveText]}>
-                Login
-              </Text>
-            </Pressable>
             <Pressable
               style={styles.segmentButton}
-              onPress={() => router.push("/sign-up")}
+              onPress={() => router.replace("/")}
             >
-              <Text style={styles.segmentText}>Sign Up</Text>
+              <Text style={styles.segmentText}>Log In</Text>
             </Pressable>
+            <Pressable style={[styles.segmentButton, styles.segmentActive]}>
+              <Text style={[styles.segmentText, styles.segmentActiveText]}>
+                Sign Up
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.nameRow}>
+            <View style={styles.nameField}>
+              <Text style={styles.label}>First Name</Text>
+              <TextInput
+                placeholder="Wade"
+                placeholderTextColor="#96A6AA"
+                style={[styles.input, errors.firstName ? styles.inputError : null]}
+                value={firstName}
+                onChangeText={(value) => {
+                  setFirstName(value);
+                  if (errors.firstName) {
+                    setErrors((current) => ({ ...current, firstName: undefined }));
+                  }
+                }}
+              />
+              {errors.firstName ? (
+                <Text style={styles.errorText}>{errors.firstName}</Text>
+              ) : null}
+            </View>
+            <View style={styles.nameField}>
+              <Text style={styles.label}>Last Name</Text>
+              <TextInput
+                placeholder="Warren"
+                placeholderTextColor="#96A6AA"
+                style={[styles.input, errors.lastName ? styles.inputError : null]}
+                value={lastName}
+                onChangeText={(value) => {
+                  setLastName(value);
+                  if (errors.lastName) {
+                    setErrors((current) => ({ ...current, lastName: undefined }));
+                  }
+                }}
+              />
+              {errors.lastName ? (
+                <Text style={styles.errorText}>{errors.lastName}</Text>
+              ) : null}
+            </View>
           </View>
 
           <Text style={styles.label}>Email</Text>
@@ -133,9 +203,7 @@ export default function HomeScreen() {
               }
             }}
           />
-          {errors.email ? (
-            <Text style={styles.errorText}>{errors.email}</Text>
-          ) : null}
+          {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
           <Text style={styles.label}>Password</Text>
           <View style={styles.inputRow}>
@@ -159,80 +227,52 @@ export default function HomeScreen() {
             <Pressable
               onPress={() => setShowPassword((value) => !value)}
               style={styles.iconButton}
-              accessibilityLabel={
-                showPassword ? "Hide password" : "Show password"
-              }
+              accessibilityLabel={showPassword ? "Hide password" : "Show password"}
             >
-              <Feather
-                name={showPassword ? "eye" : "eye-off"}
-                size={18}
-                color="#7D8C90"
-              />
+              <Feather name={showPassword ? "eye" : "eye-off"} size={18} color="#7D8C90" />
             </Pressable>
           </View>
           {errors.password ? (
             <Text style={styles.errorText}>{errors.password}</Text>
           ) : null}
 
-          <View style={styles.rememberRow}>
+          <Text style={styles.label}>Confirm Password</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              placeholder="xxxxxxxx"
+              placeholderTextColor="#96A6AA"
+              style={[
+                styles.input,
+                styles.inputWithIcon,
+                errors.confirmPassword ? styles.inputError : null,
+              ]}
+              secureTextEntry={!showConfirm}
+              value={confirmPassword}
+              onChangeText={(value) => {
+                setConfirmPassword(value);
+                if (errors.confirmPassword) {
+                  setErrors((current) => ({
+                    ...current,
+                    confirmPassword: undefined,
+                  }));
+                }
+              }}
+            />
             <Pressable
-              style={styles.checkboxWrap}
-              onPress={() => setRememberMe((value) => !value)}
-              accessibilityLabel="Remember me"
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: rememberMe }}
+              onPress={() => setShowConfirm((value) => !value)}
+              style={styles.iconButton}
+              accessibilityLabel={showConfirm ? "Hide password" : "Show password"}
             >
-              <View
-                style={[
-                  styles.checkbox,
-                  rememberMe ? styles.checkboxChecked : null,
-                ]}
-              >
-                {rememberMe ? (
-                  <Feather name="check" size={12} color="#0F2D33" />
-                ) : null}
-              </View>
-              <Text style={styles.rememberText}>Remember Me</Text>
-            </Pressable>
-            <Pressable
-              onPress={() =>
-                Alert.alert("Reset", "Password reset flow goes here.")
-              }
-            >
-              <Text style={styles.forgotText}>Forgot Password?</Text>
+              <Feather name={showConfirm ? "eye" : "eye-off"} size={18} color="#7D8C90" />
             </Pressable>
           </View>
+          {errors.confirmPassword ? (
+            <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+          ) : null}
 
-          <Pressable style={styles.primaryButton} onPress={handleLogin}>
-            <Text style={styles.primaryButtonText}>Login</Text>
+          <Pressable style={styles.primaryButton} onPress={handleSignUp}>
+            <Text style={styles.primaryButtonText}>Register</Text>
           </Pressable>
-
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Or login with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <View style={styles.socialRow}>
-            <Pressable
-              style={styles.socialButton}
-              onPress={() =>
-                Alert.alert("Google", "Google sign-in goes here.")
-              }
-            >
-              <FontAwesome name="google" size={16} color="#DB4437" />
-              <Text style={styles.socialButtonText}>Google</Text>
-            </Pressable>
-            <Pressable
-              style={styles.socialButton}
-              onPress={() =>
-                Alert.alert("Facebook", "Facebook sign-in goes here.")
-              }
-            >
-              <FontAwesome name="facebook" size={16} color="#1877F2" />
-              <Text style={styles.socialButtonText}>Facebook</Text>
-            </Pressable>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -327,6 +367,13 @@ const styles = StyleSheet.create({
   segmentActiveText: {
     color: "#1C3E45",
   },
+  nameRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  nameField: {
+    flex: 1,
+  },
   label: {
     color: "#829497",
     fontSize: 12,
@@ -347,6 +394,9 @@ const styles = StyleSheet.create({
     color: "#1F2D32",
     marginBottom: 14,
   },
+  inputWithIcon: {
+    paddingRight: 44,
+  },
   inputError: {
     borderColor: "#E38B8B",
   },
@@ -355,47 +405,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 10,
   },
-  inputWithIcon: {
-    paddingRight: 44,
-  },
   iconButton: {
     position: "absolute",
     right: 12,
     top: 12,
-  },
-  rememberRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 18,
-  },
-  checkboxWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#CBD5D8",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 8,
-    backgroundColor: "#FFFFFF",
-  },
-  checkboxChecked: {
-    backgroundColor: "#E3F1F3",
-    borderColor: "#B3D3D8",
-  },
-  rememberText: {
-    color: "#8B9A9D",
-    fontSize: 12,
-  },
-  forgotText: {
-    color: "#1C3E45",
-    fontSize: 12,
-    fontWeight: "600",
   },
   primaryButton: {
     backgroundColor: "#1A4650",
@@ -408,40 +421,5 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "700",
-  },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#E6ECEE",
-  },
-  dividerText: {
-    color: "#9AA8AC",
-    fontSize: 12,
-    marginHorizontal: 8,
-  },
-  socialRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  socialButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#E6ECEE",
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  socialButtonText: {
-    color: "#1C3E45",
-    fontSize: 13,
-    fontWeight: "600",
   },
 });
