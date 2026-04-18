@@ -86,6 +86,13 @@ export default function ProfileScreen() {
             <Feather name="user" size={16} color="#2D2E3A" />
             <Text style={styles.rowLabel}>Personal Details</Text>
           </View>
+          <Pressable
+            style={styles.rowItem}
+            onPress={() => router.push("/(tabs)/upload-content")}
+          >
+            <Feather name="upload" size={16} color="#2D2E3A" />
+            <Text style={styles.rowLabel}>Upload Content</Text>
+          </Pressable>
           <View style={styles.rowItem}>
             <Feather name="shield" size={16} color="#2D2E3A" />
             <Text style={styles.rowLabel}>Security</Text>
