@@ -1,4 +1,6 @@
 export const APPWRITE_IDS = {
+  endpoint: "https://fra.cloud.appwrite.io/v1",
+  projectId: "69e351c40030ad9ed4d3",
   databaseId: "69e35bf30037b0cf93c7",
   storageBucketId: "icu-data",
   collections: {

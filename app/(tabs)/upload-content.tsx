@@ -1,14 +1,8 @@
-import {
-  databases,
-  ID,
-  InputFile,
-  Permission,
-  Role,
-  storage,
-} from "@/lib/appwrite";
+import { account, databases, ID, Permission, Role, storage } from "@/lib/appwrite";
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -23,6 +17,7 @@ import {
 } from "react-native";
 
 export default function UploadContentScreen() {
+  const chunkSize = 5 * 1024 * 1024;
   const categories = ["Materials", "Resources", "Assignments", "Notes"];
   const tags = useMemo(() => ["Engineering", "Humanities", "Education"], []);
   const [title, setTitle] = useState("");
@@ -106,26 +101,95 @@ export default function UploadContentScreen() {
     setIsSubmitting(true);
     const upload = async () => {
       try {
-        let fileInput: File;
-        const response = await fetch(file.uri);
-        const blob = await response.blob();
-        fileInput = new File([blob], file.name, {
-          type: file.type ?? blob.type ?? "application/octet-stream",
-        });
         const permissions = [
           Permission.read(Role.users()),
           Permission.write(Role.users()),
         ];
-        const created = await storage.createFile(
+        setUploadProgress(5);
+        const jwt = await account.createJWT();
+        const fileInfo = await FileSystem.getInfoAsync(file.uri, {
+          size: true,
+        });
+
+        if (!fileInfo.exists || !fileInfo.size) {
+          throw new Error("Unable to read the selected file.");
+        }
+
+        const totalBytes = fileInfo.size;
+        const fileId = ID.unique();
+        let uploadId: string | null = null;
+        let created: any = null;
+
+        for (let start = 0; start < totalBytes; start += chunkSize) {
+          const end = Math.min(start + chunkSize, totalBytes) - 1;
+          const length = end - start + 1;
+          const chunkBase64 = await FileSystem.readAsStringAsync(file.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+            position: start,
+            length,
+          });
+
+          const chunkUri = `${FileSystem.cacheDirectory}upload-${fileId}-${start}.chunk`;
+          await FileSystem.writeAsStringAsync(chunkUri, chunkBase64, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          const headers: Record<string, string> = {
+            "X-Appwrite-Project": APPWRITE_IDS.projectId,
+            "X-Appwrite-JWT": jwt.jwt,
+            "Content-Range": `bytes ${start}-${end}/${totalBytes}`,
+          };
+
+          if (uploadId) {
+            headers["X-Appwrite-Id"] = uploadId;
+          }
+
+          const result = await FileSystem.uploadAsync(
+            `${APPWRITE_IDS.endpoint}/storage/buckets/${
+              APPWRITE_IDS.storageBucketId
+            }/files`,
+            chunkUri,
+            {
+              httpMethod: "POST",
+              headers,
+              uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+              fieldName: "file",
+              parameters: {
+                fileId,
+              },
+            },
+          );
+
+          await FileSystem.deleteAsync(chunkUri, { idempotent: true });
+
+          if (result.status < 200 || result.status >= 300) {
+            throw new Error(result.body || "Upload failed");
+          }
+
+          if (!created) {
+            created = JSON.parse(result.body);
+            uploadId = created.$id;
+          }
+
+          const percent = Math.min(
+            70,
+            Math.round(((end + 1) / totalBytes) * 70),
+          );
+          setUploadProgress(percent);
+        }
+
+        if (!created) {
+          throw new Error("Upload did not return a file response.");
+        }
+
+        await storage.updateFile(
           APPWRITE_IDS.storageBucketId,
-          ID.unique(),
-          fileInput,
+          created.$id,
+          created.name,
           permissions,
-          (progress) => {
-            const percent = Math.round((progress.progress ?? 0) * 100);
-            setUploadProgress(percent);
-          },
         );
+
+        setUploadProgress(80);
 
         const payload: Record<string, string | string[]> = {
           title: title.trim(),
@@ -149,6 +213,7 @@ export default function UploadContentScreen() {
           permissions,
         );
 
+        setUploadProgress(100);
         Alert.alert("Uploaded", "Your content has been submitted.");
         setTitle("");
         setSelectedCategories([categories[0]]);
@@ -157,10 +222,23 @@ export default function UploadContentScreen() {
         setFile(undefined);
         setUploadProgress(0);
       } catch (error) {
-        const message =
+        let message =
           typeof error === "object" && error && "message" in error
             ? String(error.message)
             : "Unable to upload your content.";
+        const normalized = message.toLowerCase();
+        if (normalized.includes("backend write error") || normalized.includes("503")) {
+          message =
+            "Appwrite returned a 503 while writing the file. Try again in a moment or upload a smaller file.";
+        } else if (
+          normalized.includes("network") ||
+          normalized.includes("offline")
+        ) {
+          message =
+            "The upload could not reach Appwrite. Please confirm your connection and retry.";
+        } else if (normalized.includes("<html")) {
+          message = "The server returned an unexpected response. Please retry.";
+        }
         Alert.alert("Upload failed", message);
       } finally {
         setIsSubmitting(false);

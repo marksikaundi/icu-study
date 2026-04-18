@@ -9,10 +9,11 @@ import {
   Role,
   Storage,
 } from "appwrite";
+import { APPWRITE_IDS } from "@/lib/appwrite-ids";
 
 const client = new Client()
-  .setEndpoint("https://fra.cloud.appwrite.io/v1")
-  .setProject("69e351c40030ad9ed4d3");
+  .setEndpoint(APPWRITE_IDS.endpoint)
+  .setProject(APPWRITE_IDS.projectId);
 
 export const account = new Account(client);
 export const databases = new Databases(client);
