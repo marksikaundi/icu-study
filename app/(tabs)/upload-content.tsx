@@ -1,4 +1,11 @@
-import { storage, databases, ID, InputFile, Permission, Role } from "@/lib/appwrite";
+import {
+  databases,
+  ID,
+  InputFile,
+  Permission,
+  Role,
+  storage,
+} from "@/lib/appwrite";
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
