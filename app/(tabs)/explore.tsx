@@ -5,12 +5,12 @@ import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProgramsScreen() {
   const router = useRouter();

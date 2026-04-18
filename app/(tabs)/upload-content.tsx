@@ -9,19 +9,19 @@ import {
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function UploadContentScreen() {
   const chunkSize = 5 * 1024 * 1024;
