@@ -1,4 +1,4 @@
-import "react-native-gesture-handler";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import {
   DarkTheme,
@@ -9,7 +9,6 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { account } from "@/lib/appwrite";
@@ -57,11 +56,12 @@ export default function RootLayout() {
       return;
     }
 
-    const inTabs = segments[0] === "(tabs)";
+    const firstSegment = segments[0];
+    const inTabs = firstSegment === "(tabs)";
     const inAuthScreens =
-      segments.length === 0 ||
-      segments[0] === "sign-up" ||
-      segments[0] === "reset-password";
+      !firstSegment ||
+      firstSegment === "sign-up" ||
+      firstSegment === "reset-password";
 
     if (!isAuthenticated && inTabs) {
       router.replace("/");
@@ -84,7 +84,10 @@ export default function RootLayout() {
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="sign-up" options={{ headerShown: false }} />
-          <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="reset-password"
+            options={{ headerShown: false }}
+          />
           <Stack.Screen
             name="modal"
             options={{ presentation: "modal", headerShown: false }}

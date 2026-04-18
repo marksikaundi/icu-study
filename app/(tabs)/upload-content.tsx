@@ -162,6 +162,7 @@ export default function UploadContentScreen() {
               headers,
               uploadType: FileSystem.FileSystemUploadType.MULTIPART,
               fieldName: "file",
+              mimeType: file.type ?? "application/octet-stream",
               parameters: {
                 fileId,
               },
