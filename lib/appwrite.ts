@@ -1,4 +1,14 @@
-import { Account, Client, Databases, ID, Query } from "appwrite";
+import {
+  Account,
+  Client,
+  Databases,
+  ID,
+  InputFile,
+  Permission,
+  Query,
+  Role,
+  Storage,
+} from "appwrite";
 
 const client = new Client()
   .setEndpoint("https://fra.cloud.appwrite.io/v1")
@@ -6,4 +16,5 @@ const client = new Client()
 
 export const account = new Account(client);
 export const databases = new Databases(client);
-export { ID, Query };
+export const storage = new Storage(client);
+export { ID, InputFile, Permission, Query, Role };

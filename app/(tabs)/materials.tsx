@@ -1,6 +1,7 @@
-import { databases } from "@/lib/appwrite";
+import { databases, storage } from "@/lib/appwrite";
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
 import { Feather } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 import { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
@@ -56,9 +57,12 @@ export default function MaterialsScreen() {
         );
         if (isActive) {
           const mapped = response.documents.map((doc) => ({
+            id: doc.$id,
             title: String(doc.title ?? doc.name ?? "Material"),
-            subtitle: String(doc.subtitle ?? doc.summary ?? ""),
+            subtitle: String(doc.description ?? doc.subtitle ?? ""),
             type: String(doc.type ?? doc.format ?? "PDF"),
+            fileId: doc.fileId as string | undefined,
+            fileName: String(doc.fileName ?? ""),
           }));
           setData(mapped);
         }
@@ -94,7 +98,20 @@ export default function MaterialsScreen() {
         </View>
 
         {data.map((item) => (
-          <View key={item.title} style={styles.card}>
+          <Pressable
+            key={item.id ?? item.title}
+            style={styles.card}
+            onPress={() => {
+              if (!item.fileId || !APPWRITE_IDS.storageBucketId) {
+                return;
+              }
+              const url = storage.getFileView(
+                APPWRITE_IDS.storageBucketId,
+                item.fileId,
+              ).href;
+              void Linking.openURL(url);
+            }}
+          >
             <View style={styles.iconWrap}>
               <Feather name="file-text" size={16} color="#2D2E3A" />
             </View>
@@ -102,10 +119,10 @@ export default function MaterialsScreen() {
               <Text style={styles.cardTitle}>{item.title}</Text>
               <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
             </View>
-            <Pressable style={styles.tag}>
+            <View style={styles.tag}>
               <Text style={styles.tagText}>{item.type}</Text>
-            </Pressable>
-          </View>
+            </View>
+          </Pressable>
         ))}
         {isLoading ? (
           <Text style={styles.loadingText}>Loading materials...</Text>

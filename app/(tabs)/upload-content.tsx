@@ -1,4 +1,7 @@
+import { storage, databases, ID, InputFile, Permission, Role } from "@/lib/appwrite";
+import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
 import { Feather } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import { useState } from "react";
 import {
   Alert,
@@ -15,7 +18,37 @@ export default function UploadContentScreen() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
+  const [file, setFile] = useState<
+    | {
+        uri: string;
+        name: string;
+        type?: string;
+      }
+    | undefined
+  >();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePickFile = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "*/*",
+      copyToCacheDirectory: true,
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const picked = result.assets?.[0];
+    if (!picked) {
+      return;
+    }
+
+    setFile({
+      uri: picked.uri,
+      name: picked.name ?? "upload",
+      type: picked.mimeType ?? undefined,
+    });
+  };
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -23,14 +56,74 @@ export default function UploadContentScreen() {
       return;
     }
 
+    if (!file) {
+      Alert.alert("Missing file", "Pick a file to upload.");
+      return;
+    }
+
+    if (!isConfigured(APPWRITE_IDS.collections.materials)) {
+      Alert.alert(
+        "Not configured",
+        "Set the materials collection ID in lib/appwrite-ids.ts",
+      );
+      return;
+    }
+
+    if (!APPWRITE_IDS.storageBucketId) {
+      Alert.alert(
+        "Not configured",
+        "Set the storage bucket ID in lib/appwrite-ids.ts",
+      );
+      return;
+    }
+
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      Alert.alert("Uploaded", "Your content has been submitted.");
-      setTitle("");
-      setCategory("");
-      setDescription("");
-    }, 600);
+    const upload = async () => {
+      try {
+        const fileInput = InputFile.fromPath(file.uri, file.name);
+        const permissions = [
+          Permission.read(Role.users()),
+          Permission.write(Role.users()),
+        ];
+        const created = await storage.createFile(
+          APPWRITE_IDS.storageBucketId,
+          ID.unique(),
+          fileInput,
+          permissions,
+        );
+
+        await databases.createDocument(
+          APPWRITE_IDS.databaseId,
+          APPWRITE_IDS.collections.materials,
+          ID.unique(),
+          {
+            title: title.trim(),
+            description: description.trim(),
+            categories: category.trim(),
+            fileId: created.$id,
+            fileName: created.name,
+            type: file.type ?? "File",
+          },
+          permissions,
+        );
+
+        Alert.alert("Uploaded", "Your content has been submitted.");
+        setTitle("");
+        setCategory("");
+        setDescription("");
+        setFile(undefined);
+      } catch (error) {
+        const message =
+          typeof error === "object" && error && "message" in error
+            ? String(error.message)
+            : "Unable to upload your content.";
+        Alert.alert("Upload failed", message);
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    void upload();
   };
 
   return (
@@ -74,6 +167,13 @@ export default function UploadContentScreen() {
             style={[styles.input, styles.textarea]}
             multiline
           />
+
+          <Pressable style={styles.fileButton} onPress={handlePickFile}>
+            <Feather name="paperclip" size={16} color="#2D2E3A" />
+            <Text style={styles.fileButtonText}>
+              {file ? file.name : "Attach file"}
+            </Text>
+          </Pressable>
 
           <Pressable
             style={[
@@ -157,5 +257,18 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "700",
+  },
+  fileButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#F1F2F6",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  fileButtonText: {
+    fontSize: 12,
+    color: "#2D2E3A",
   },
 });
