@@ -20,12 +20,12 @@ const normalizeItems = (value: unknown): RecentOpenItem[] => {
     .filter((item): item is RecentOpenItem =>
       Boolean(
         item &&
-          typeof item === "object" &&
-          "id" in item &&
-          "title" in item &&
-          "subtitle" in item &&
-          "category" in item &&
-          "openedAt" in item,
+        typeof item === "object" &&
+        "id" in item &&
+        "title" in item &&
+        "subtitle" in item &&
+        "category" in item &&
+        "openedAt" in item,
       ),
     )
     .map((item) => ({

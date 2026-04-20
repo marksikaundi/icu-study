@@ -3,6 +3,7 @@ import HugeiconsIcon, {
 } from "@/components/hugeicons-icon";
 import { databases, Query, storage } from "@/lib/appwrite";
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
+import { addRecentOpen } from "@/lib/recent-opens";
 import {
   ArchiveIcon,
   ArrowRight01Icon,
@@ -25,6 +26,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type ResourceItem = {
+  id: string;
   title: string;
   subtitle: string;
   icon: string;
@@ -80,6 +82,7 @@ export default function ResourcesScreen() {
         );
         if (isActive) {
           const mapped = response.documents.map((doc) => ({
+            id: String(doc.$id),
             title: String(doc.title ?? doc.name ?? "Resource"),
             subtitle: String(
               doc.subtitle ?? doc.summary ?? doc.description ?? "",
@@ -132,6 +135,12 @@ export default function ResourcesScreen() {
               if (!item.fileId || !APPWRITE_IDS.storageBucketId) {
                 return;
               }
+              void addRecentOpen({
+                id: item.id,
+                title: item.title,
+                subtitle: item.subtitle,
+                category: "Resources",
+              });
               const url = storage.getFileView(
                 APPWRITE_IDS.storageBucketId,
                 item.fileId,
