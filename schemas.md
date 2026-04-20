@@ -29,3 +29,12 @@ type (string, optional)
 fileId (string, optional)
 fileName (string, optional)
 programName (string, optional)
+
+## Appwrite console steps (quick)
+
+1. Open Appwrite Console -> Databases -> select your database.
+2. Create a collection named assignments, then add the columns listed above.
+3. Repeat for materials, notes, and resources.
+4. For each column, use type string and set required true/false as listed.
+5. Permissions: allow read for the roles you want to access the app.
+6. Upload files to Storage and copy the file ID into fileId when needed.
