@@ -3,12 +3,13 @@ import { databases, storage } from "@/lib/appwrite";
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
 import { addRecentOpen } from "@/lib/recent-opens";
 import { File02Icon } from "@hugeicons/core-free-icons";
-import * as Linking from "expo-linking";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MaterialsScreen() {
+  const router = useRouter();
   const [data, setData] = useState<
     {
       id: string;
@@ -100,7 +101,13 @@ export default function MaterialsScreen() {
                 APPWRITE_IDS.storageBucketId,
                 item.fileId,
               ).href;
-              void Linking.openURL(url);
+              router.push({
+                pathname: "/material-viewer",
+                params: {
+                  url,
+                  title: item.title,
+                },
+              });
             }}
           >
             <View style={styles.iconWrap}>

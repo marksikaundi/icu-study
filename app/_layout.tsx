@@ -89,6 +89,10 @@ export default function RootLayout() {
             options={{ headerShown: false }}
           />
           <Stack.Screen
+            name="material-viewer"
+            options={{ headerShown: true, title: "Material" }}
+          />
+          <Stack.Screen
             name="modal"
             options={{ presentation: "modal", headerShown: false }}
           />
