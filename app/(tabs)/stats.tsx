@@ -1,15 +1,19 @@
 import HugeiconsIcon from "@/components/hugeicons-icon";
+import { getRecentOpens, type RecentOpenItem } from "@/lib/recent-opens";
 import {
   BarChartIcon,
   Clock01Icon,
   Tick01Icon,
   ZapIcon,
 } from "@hugeicons/core-free-icons";
-import { useMemo } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function StatsScreen() {
+  const [recentOpens, setRecentOpens] = useState<RecentOpenItem[]>([]);
+  const [recentError, setRecentError] = useState<string | null>(null);
   const highlights = useMemo(
     () => [
       {
@@ -33,6 +37,22 @@ export default function StatsScreen() {
       },
     ],
     [],
+  );
+
+  const loadRecentOpens = useCallback(async () => {
+    try {
+      const items = await getRecentOpens();
+      setRecentOpens(items);
+      setRecentError(null);
+    } catch {
+      setRecentError("Unable to load recent files right now.");
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadRecentOpens();
+    }, [loadRecentOpens]),
   );
 
   return (
@@ -81,17 +101,28 @@ export default function StatsScreen() {
         </View>
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Focus Areas</Text>
-          <View style={styles.focusRow}>
-            <View style={styles.focusItem}>
-              <Text style={styles.focusValue}>Chemistry</Text>
-              <Text style={styles.focusHint}>3 modules left</Text>
+          <Text style={styles.sectionTitle}>Recent opened files</Text>
+          {recentError ? (
+            <Text style={styles.focusEmpty}>{recentError}</Text>
+          ) : null}
+          {!recentError && recentOpens.length === 0 ? (
+            <Text style={styles.focusEmpty}>No files opened yet.</Text>
+          ) : null}
+          {!recentError && recentOpens.length > 0 ? (
+            <View style={styles.focusRow}>
+              {recentOpens.map((item) => (
+                <View
+                  key={`${item.category}-${item.id}`}
+                  style={styles.focusItem}
+                >
+                  <Text style={styles.focusValue}>{item.title}</Text>
+                  <Text style={styles.focusHint}>
+                    {item.subtitle || item.category}
+                  </Text>
+                </View>
+              ))}
             </View>
-            <View style={styles.focusItem}>
-              <Text style={styles.focusValue}>Maths</Text>
-              <Text style={styles.focusHint}>2 modules left</Text>
-            </View>
-          </View>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -185,11 +216,10 @@ const styles = StyleSheet.create({
     color: "#7A7D92",
   },
   focusRow: {
-    flexDirection: "row",
-    gap: 12,
+    flexDirection: "column",
+    gap: 10,
   },
   focusItem: {
-    flex: 1,
     backgroundColor: "#F3F4FA",
     borderRadius: 14,
     padding: 12,
@@ -203,5 +233,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#7A7D92",
     marginTop: 4,
+  },
+  focusEmpty: {
+    fontSize: 12,
+    color: "#7A7D92",
   },
 });

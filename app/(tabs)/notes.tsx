@@ -1,6 +1,7 @@
 import HugeiconsIcon from "@/components/hugeicons-icon";
 import { databases } from "@/lib/appwrite";
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
+import { addRecentOpen } from "@/lib/recent-opens";
 import { Add01Icon, Edit02Icon } from "@hugeicons/core-free-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -86,12 +87,18 @@ export default function NotesScreen() {
           <Pressable
             key={item.id}
             style={styles.card}
-            onPress={() =>
+            onPress={() => {
+              void addRecentOpen({
+                id: item.id,
+                title: item.title,
+                subtitle: item.subtitle,
+                category: "Notes",
+              });
               router.push({
                 pathname: "/(tabs)/notes-editor",
                 params: { noteId: item.id },
-              })
-            }
+              });
+            }}
           >
             <View style={styles.iconWrap}>
               <HugeiconsIcon icon={Edit02Icon} size={16} color="#2D2E3A" />

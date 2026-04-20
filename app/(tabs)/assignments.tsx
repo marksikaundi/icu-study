@@ -1,6 +1,7 @@
 import HugeiconsIcon from "@/components/hugeicons-icon";
 import { databases, storage } from "@/lib/appwrite";
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
+import { addRecentOpen } from "@/lib/recent-opens";
 import { ClipboardIcon } from "@hugeicons/core-free-icons";
 import * as Linking from "expo-linking";
 import { useEffect, useState } from "react";
@@ -91,6 +92,12 @@ export default function AssignmentsScreen() {
               if (!item.fileId || !APPWRITE_IDS.storageBucketId) {
                 return;
               }
+              void addRecentOpen({
+                id: item.fileId ?? item.title,
+                title: item.title,
+                subtitle: item.subtitle,
+                category: "Assignments",
+              });
               const url = storage.getFileView(
                 APPWRITE_IDS.storageBucketId,
                 item.fileId,
