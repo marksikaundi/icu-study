@@ -15,7 +15,7 @@ export default function TabLayout() {
       <Tabs.Screen name="explore" options={{ title: "Explore" }} />
       <Tabs.Screen name="journey" options={{ title: "Tutor" }} />
       <Tabs.Screen name="stats" options={{ title: "Stats" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen name="materials" options={{ href: null }} />
       <Tabs.Screen name="resources" options={{ href: null }} />
       <Tabs.Screen name="assignments" options={{ href: null }} />

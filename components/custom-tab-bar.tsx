@@ -11,7 +11,6 @@ const TAB_CONFIG: Record<
   explore: { label: "Explore", icon: "compass" },
   journey: { label: "Tutor", icon: "help-circle" },
   stats: { label: "Stats", icon: "bar-chart-2" },
-  profile: { label: "Profile", icon: "user" },
 };
 
 export function CustomTabBar({
