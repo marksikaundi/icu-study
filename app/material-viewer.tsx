@@ -1,11 +1,6 @@
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useMemo } from "react";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
@@ -14,6 +9,8 @@ export default function MaterialViewerScreen() {
   const { url, title } = useLocalSearchParams<{
     url?: string | string[];
     title?: string | string[];
+    fileName?: string | string[];
+    type?: string | string[];
   }>();
 
   const resolvedUrl = useMemo(() => {
@@ -30,11 +27,49 @@ export default function MaterialViewerScreen() {
     return title ?? "Material";
   }, [title]);
 
+  const resolvedFileName = useMemo(() => {
+    if (Array.isArray(fileName)) {
+      return fileName[0];
+    }
+    return fileName ?? "";
+  }, [fileName]);
+
+  const resolvedType = useMemo(() => {
+    if (Array.isArray(type)) {
+      return type[0];
+    }
+    return type ?? "";
+  }, [type]);
+
+  const viewerUrl = useMemo(() => {
+    if (!resolvedUrl) {
+      return undefined;
+    }
+
+    const normalizedName = resolvedFileName.toLowerCase();
+    const normalizedType = resolvedType.toLowerCase();
+    const isOfficeDoc =
+      normalizedType.includes("pdf") ||
+      normalizedType.includes("officedocument") ||
+      normalizedType.includes("msword") ||
+      normalizedType.includes("powerpoint") ||
+      normalizedType.includes("excel") ||
+      /\.(pdf|doc|docx|ppt|pptx|xls|xlsx)$/.test(normalizedName);
+
+    if (isOfficeDoc) {
+      return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(
+        resolvedUrl,
+      )}`;
+    }
+
+    return resolvedUrl;
+  }, [resolvedFileName, resolvedType, resolvedUrl]);
+
   useEffect(() => {
     navigation.setOptions({ title: resolvedTitle });
   }, [navigation, resolvedTitle]);
 
-  if (!resolvedUrl) {
+  if (!viewerUrl) {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={styles.emptyState}>
@@ -50,7 +85,7 @@ export default function MaterialViewerScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <WebView
-        source={{ uri: resolvedUrl }}
+        source={{ uri: viewerUrl }}
         startInLoadingState
         renderLoading={() => (
           <View style={styles.loadingState}>
