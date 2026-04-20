@@ -6,7 +6,7 @@ import { WebView } from "react-native-webview";
 
 export default function MaterialViewerScreen() {
   const navigation = useNavigation();
-  const { url, title } = useLocalSearchParams<{
+  const { url, title, fileName, type } = useLocalSearchParams<{
     url?: string | string[];
     title?: string | string[];
     fileName?: string | string[];
