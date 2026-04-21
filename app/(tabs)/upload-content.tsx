@@ -21,6 +21,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -35,7 +36,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 
 type SelectedFile = {
   uri?: string;
@@ -135,10 +135,7 @@ export default function UploadContentScreen() {
   const resolveFileKind = (mimeType?: string, fileName?: string) => {
     const lowerMime = (mimeType ?? "").toLowerCase();
     const lowerName = (fileName ?? "").toLowerCase();
-    if (
-      lowerMime.includes("pdf") ||
-      lowerName.endsWith(".pdf")
-    ) {
+    if (lowerMime.includes("pdf") || lowerName.endsWith(".pdf")) {
       return "pdf";
     }
     if (
@@ -604,7 +601,7 @@ export default function UploadContentScreen() {
   const isImageFile = fileKind === "image";
   const isPdfFile = fileKind === "pdf";
   const previewSourceUri =
-    Platform.OS === "web" ? previewUri : file?.uri ?? null;
+    Platform.OS === "web" ? previewUri : (file?.uri ?? null);
   const webDropProps =
     Platform.OS === "web"
       ? ({
@@ -890,7 +887,8 @@ export default function UploadContentScreen() {
           ) : (
             recentUploads.map((item) => {
               const kind = resolveFileKind(item.mimeType, item.fileName);
-              const pillLabel = kind === "pdf" ? "PDF" : kind === "image" ? "IMG" : "";
+              const pillLabel =
+                kind === "pdf" ? "PDF" : kind === "image" ? "IMG" : "";
               return (
                 <Pressable
                   key={`${item.id}-${item.uploadedAt}`}
@@ -934,7 +932,9 @@ export default function UploadContentScreen() {
                         <Text
                           style={[
                             styles.recentPillText,
-                            kind === "image" ? styles.recentPillTextImage : null,
+                            kind === "image"
+                              ? styles.recentPillTextImage
+                              : null,
                           ]}
                         >
                           {pillLabel}
