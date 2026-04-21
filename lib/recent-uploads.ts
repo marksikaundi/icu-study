@@ -9,6 +9,7 @@ export type RecentUploadItem = {
   category: string;
   program: string;
   fileName: string;
+  mimeType?: string;
   uploadedAt: string;
 };
 
@@ -21,13 +22,13 @@ const normalizeItems = (value: unknown): RecentUploadItem[] => {
     .filter((item): item is RecentUploadItem =>
       Boolean(
         item &&
-          typeof item === "object" &&
-          "id" in item &&
-          "title" in item &&
-          "category" in item &&
-          "program" in item &&
-          "fileName" in item &&
-          "uploadedAt" in item,
+        typeof item === "object" &&
+        "id" in item &&
+        "title" in item &&
+        "category" in item &&
+        "program" in item &&
+        "fileName" in item &&
+        "uploadedAt" in item,
       ),
     )
     .map((item) => ({
@@ -36,6 +37,7 @@ const normalizeItems = (value: unknown): RecentUploadItem[] => {
       category: String(item.category),
       program: String(item.program),
       fileName: String(item.fileName ?? ""),
+      mimeType: String((item as { mimeType?: string }).mimeType ?? ""),
       uploadedAt: String(item.uploadedAt),
     }));
 };

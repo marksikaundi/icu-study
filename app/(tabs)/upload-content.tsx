@@ -14,13 +14,18 @@ import {
   getRecentUploads,
   type RecentUploadItem,
 } from "@/lib/recent-uploads";
-import { AttachmentIcon, CloudUploadIcon } from "@hugeicons/core-free-icons";
+import {
+  AttachmentIcon,
+  CloudUploadIcon,
+  File02Icon,
+} from "@hugeicons/core-free-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -30,6 +35,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 type SelectedFile = {
   uri?: string;
@@ -40,6 +46,7 @@ type SelectedFile = {
 };
 
 export default function UploadContentScreen() {
+  const router = useRouter();
   const chunkSize = 5 * 1024 * 1024;
   const maxFileBytes = 200 * 1024 * 1024;
   const categories = ["Materials", "Resources", "Assignments", "Notes"];
@@ -73,6 +80,7 @@ export default function UploadContentScreen() {
   const [uploadSpeed, setUploadSpeed] = useState<number | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const [recentUploads, setRecentUploads] = useState<RecentUploadItem[]>([]);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const uploadStartRef = useRef<number | null>(null);
 
   const formatBytes = (bytes?: number) => {
@@ -122,6 +130,26 @@ export default function UploadContentScreen() {
     }
     const days = Math.round(hours / 24);
     return `${days}d ago`;
+  };
+
+  const resolveFileKind = (mimeType?: string, fileName?: string) => {
+    const lowerMime = (mimeType ?? "").toLowerCase();
+    const lowerName = (fileName ?? "").toLowerCase();
+    if (
+      lowerMime.includes("pdf") ||
+      lowerName.endsWith(".pdf")
+    ) {
+      return "pdf";
+    }
+    if (
+      lowerMime.startsWith("image/") ||
+      [".png", ".jpg", ".jpeg", ".gif", ".webp"].some((ext) =>
+        lowerName.endsWith(ext),
+      )
+    ) {
+      return "image";
+    }
+    return "file";
   };
 
   useEffect(() => {
@@ -180,6 +208,35 @@ export default function UploadContentScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      setPreviewUri(null);
+      return;
+    }
+
+    if (!file?.webFile || resolveFileKind(file.type, file.name) !== "image") {
+      setPreviewUri(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(file.webFile);
+    setPreviewUri(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file?.name, file?.type, file?.webFile]);
+
+  const rejectOversizedFile = (size?: number) => {
+    if (size && size > maxFileBytes) {
+      Alert.alert(
+        "File too large",
+        `Pick a file under ${formatBytes(maxFileBytes)}.`,
+      );
+      return true;
+    }
+    return false;
+  };
+
   const handlePickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: "*/*",
@@ -197,18 +254,26 @@ export default function UploadContentScreen() {
 
     if (Platform.OS === "web") {
       const webFile = "file" in picked ? picked.file : undefined;
+      const webSize =
+        typeof picked.size === "number" ? picked.size : webFile?.size;
+      if (rejectOversizedFile(webSize)) {
+        return;
+      }
       setFile({
         uri: picked.uri,
         name: picked.name ?? webFile?.name ?? "upload",
         type: picked.mimeType ?? webFile?.type,
         size:
-          typeof picked.size === "number" ? picked.size : webFile?.size ?? 0,
+          typeof picked.size === "number" ? picked.size : (webFile?.size ?? 0),
         webFile: webFile ?? undefined,
       });
       return;
     }
 
     const info = await FileSystem.getInfoAsync(picked.uri);
+    if (info.exists && "size" in info && rejectOversizedFile(info.size)) {
+      return;
+    }
 
     setFile({
       uri: picked.uri,
@@ -246,6 +311,10 @@ export default function UploadContentScreen() {
 
     const dropped = event?.nativeEvent?.dataTransfer?.files?.[0];
     if (!dropped) {
+      return;
+    }
+
+    if (rejectOversizedFile(dropped.size)) {
       return;
     }
 
@@ -428,8 +497,7 @@ export default function UploadContentScreen() {
           setUploadProgress(percent);
 
           if (uploadStartRef.current) {
-            const elapsedSeconds =
-              (Date.now() - uploadStartRef.current) / 1000;
+            const elapsedSeconds = (Date.now() - uploadStartRef.current) / 1000;
             if (elapsedSeconds > 0) {
               const uploadedBytes = end + 1;
               const speed = uploadedBytes / elapsedSeconds;
@@ -482,6 +550,7 @@ export default function UploadContentScreen() {
           category: primaryCategory,
           program: selectedProgram,
           fileName: file.name,
+          mimeType: file.type ?? "",
         });
         setRecentUploads(updatedRecents);
 
@@ -531,6 +600,11 @@ export default function UploadContentScreen() {
     ? `${formatBytes(file.size)} of ${formatBytes(maxFileBytes)}`
     : `Up to ${formatBytes(maxFileBytes)}`;
   const etaLabel = formatDuration(uploadEtaSeconds);
+  const fileKind = file ? resolveFileKind(file.type, file.name) : "file";
+  const isImageFile = fileKind === "image";
+  const isPdfFile = fileKind === "pdf";
+  const previewSourceUri =
+    Platform.OS === "web" ? previewUri : file?.uri ?? null;
   const webDropProps =
     Platform.OS === "web"
       ? ({
@@ -592,27 +666,43 @@ export default function UploadContentScreen() {
                 {file
                   ? "Keep the latest version uploaded"
                   : Platform.OS === "web"
-                  ? "Drag and drop supported on web"
-                  : "Max 200MB recommended"}
+                    ? "Drag and drop supported on web"
+                    : "Max 200MB recommended"}
               </Text>
             </View>
           </Pressable>
 
-          <Text
-            style={[
-              styles.sizeHint,
-              file?.size && file.size > maxFileBytes
-                ? styles.sizeHintError
-                : null,
-            ]}
-          >
-            Size limit: {sizeLabel}
-          </Text>
+          <View style={styles.sizeRow}>
+            <Text
+              style={[
+                styles.sizeHint,
+                file?.size && file.size > maxFileBytes
+                  ? styles.sizeHintError
+                  : null,
+              ]}
+            >
+              Size limit: {sizeLabel}
+            </Text>
+            <View style={styles.sizePill}>
+              <Text style={styles.sizePillText}>Hard cap</Text>
+            </View>
+          </View>
 
           {file ? (
             <View style={styles.fileCard}>
               <View style={styles.fileIconWrapper}>
-                <HugeiconsIcon icon={AttachmentIcon} size={18} color="#1F2A44" />
+                {isImageFile && previewSourceUri ? (
+                  <Image
+                    source={{ uri: previewSourceUri }}
+                    style={styles.fileThumbnail}
+                  />
+                ) : (
+                  <HugeiconsIcon
+                    icon={isPdfFile ? File02Icon : AttachmentIcon}
+                    size={18}
+                    color="#1F2A44"
+                  />
+                )}
               </View>
               <View style={styles.fileMeta}>
                 <Text style={styles.fileName}>{file.name}</Text>
@@ -729,9 +819,7 @@ export default function UploadContentScreen() {
                 <Text
                   style={[
                     styles.chipText,
-                    selectedTags.includes(item)
-                      ? styles.chipTextActive
-                      : null,
+                    selectedTags.includes(item) ? styles.chipTextActive : null,
                   ]}
                 >
                   {item}
@@ -760,8 +848,7 @@ export default function UploadContentScreen() {
               />
             </View>
             <Text style={styles.progressText}>
-              Uploading {uploadProgress}%
-              {etaLabel ? ` • ETA ${etaLabel}` : ""}
+              Uploading {uploadProgress}%{etaLabel ? ` • ETA ${etaLabel}` : ""}
               {uploadSpeed ? ` • ${formatBytes(uploadSpeed)}/s` : ""}
             </Text>
           </View>
@@ -801,19 +888,66 @@ export default function UploadContentScreen() {
               </Text>
             </View>
           ) : (
-            recentUploads.map((item) => (
-              <View key={`${item.id}-${item.uploadedAt}`} style={styles.recentRow}>
-                <View style={styles.recentInfo}>
-                  <Text style={styles.recentTitle}>{item.title}</Text>
-                  <Text style={styles.recentMeta}>
-                    {item.category} • {item.program}
-                  </Text>
-                </View>
-                <Text style={styles.recentTime}>
-                  {formatRelativeTime(item.uploadedAt)}
-                </Text>
-              </View>
-            ))
+            recentUploads.map((item) => {
+              const kind = resolveFileKind(item.mimeType, item.fileName);
+              const pillLabel = kind === "pdf" ? "PDF" : kind === "image" ? "IMG" : "";
+              return (
+                <Pressable
+                  key={`${item.id}-${item.uploadedAt}`}
+                  style={styles.recentRow}
+                  onPress={() => {
+                    if (!item.id || !APPWRITE_IDS.storageBucketId) {
+                      return;
+                    }
+                    router.push({
+                      pathname: "/material-viewer",
+                      params: {
+                        fileId: item.id,
+                        title: item.title,
+                        fileName: item.fileName,
+                        mimeType: item.mimeType ?? "",
+                      },
+                    });
+                  }}
+                >
+                  <View style={styles.recentIconWrap}>
+                    <HugeiconsIcon
+                      icon={kind === "pdf" ? File02Icon : AttachmentIcon}
+                      size={16}
+                      color={kind === "pdf" ? "#B91C1C" : "#1F2A44"}
+                    />
+                  </View>
+                  <View style={styles.recentInfo}>
+                    <Text style={styles.recentTitle}>{item.title}</Text>
+                    <Text style={styles.recentMeta}>
+                      {item.category} • {item.program}
+                    </Text>
+                  </View>
+                  <View style={styles.recentMetaRight}>
+                    {pillLabel ? (
+                      <View
+                        style={[
+                          styles.recentPill,
+                          kind === "image" ? styles.recentPillImage : null,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.recentPillText,
+                            kind === "image" ? styles.recentPillTextImage : null,
+                          ]}
+                        >
+                          {pillLabel}
+                        </Text>
+                      </View>
+                    ) : null}
+                    <Text style={styles.recentTime}>
+                      {formatRelativeTime(item.uploadedAt)}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })
           )}
         </View>
       </ScrollView>
@@ -1012,9 +1146,25 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sizeHint: {
-    marginTop: 10,
     fontSize: 12,
     color: "#64748B",
+  },
+  sizeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  sizePill: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  sizePillText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#B91C1C",
   },
   sizeHintError: {
     color: "#DC2626",
@@ -1036,6 +1186,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#E2E8F0",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  fileThumbnail: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   fileMeta: {
     flex: 1,
@@ -1119,9 +1275,39 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
   },
+  recentIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
   recentInfo: {
     flex: 1,
     marginRight: 12,
+  },
+  recentMetaRight: {
+    alignItems: "flex-end",
+    gap: 6,
+  },
+  recentPill: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  recentPillText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#B91C1C",
+  },
+  recentPillImage: {
+    backgroundColor: "#DBEAFE",
+  },
+  recentPillTextImage: {
+    color: "#1D4ED8",
   },
   recentTitle: {
     fontSize: 14,
