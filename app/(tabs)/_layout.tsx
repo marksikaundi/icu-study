@@ -1,9 +1,46 @@
-import { Tabs } from "expo-router";
-import React from "react";
+import { account } from "@/lib/appwrite";
+import { Tabs, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { CustomTabBar } from "@/components/custom-tab-bar";
 
 export default function TabLayout() {
+  const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const confirmSession = async () => {
+      try {
+        await account.get();
+      } catch {
+        if (isActive) {
+          router.replace("/auth/sign-in");
+        }
+      } finally {
+        if (isActive) {
+          setIsChecking(false);
+        }
+      }
+    };
+
+    confirmSession();
+
+    return () => {
+      isActive = false;
+    };
+  }, [router]);
+
+  if (isChecking) {
+    return (
+      <View style={styles.screen}>
+        <ActivityIndicator size="small" color="#2D2E3A" />
+      </View>
+    );
+  }
+
   return (
     <Tabs
       screenOptions={{
@@ -26,3 +63,12 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F4F3F9",
+  },
+});
