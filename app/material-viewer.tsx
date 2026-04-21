@@ -7,7 +7,6 @@ import * as Linking from "expo-linking";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Pdf from "react-native-pdf";
 import {
   ActivityIndicator,
   Platform,
@@ -16,6 +15,7 @@ import {
   Text,
   View,
 } from "react-native";
+import Pdf from "react-native-pdf";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MaterialViewerScreen() {
@@ -295,9 +295,7 @@ export default function MaterialViewerScreen() {
                 {isDownloading ? (
                   <View style={styles.buttonLoading}>
                     <ActivityIndicator size="small" color="#FFFFFF" />
-                    <Text style={styles.primaryButtonText}>
-                      Downloading...
-                    </Text>
+                    <Text style={styles.primaryButtonText}>Downloading...</Text>
                   </View>
                 ) : (
                   <Text style={styles.primaryButtonText}>
@@ -312,57 +310,57 @@ export default function MaterialViewerScreen() {
           </View>
         </View>
       ) : (
-      <View style={styles.previewState}>
-        <View style={styles.iconBubble}>
-          <HugeiconsIcon icon={File02Icon} size={28} color="#2D2E3A" />
-        </View>
-        <Text style={styles.emptyTitle}>{resolvedTitle}</Text>
-        <Text style={styles.emptySubtitle}>
-          {resolvedFileName && !resolvedFileName.includes(".chunk")
-            ? resolvedFileName
-            : fileExtension
-              ? fileExtension.toUpperCase()
-              : "Document"}
-        </Text>
-        {localUri ? (
-          <View style={styles.statusPill}>
-            <Text style={styles.statusText}>Available offline</Text>
+        <View style={styles.previewState}>
+          <View style={styles.iconBubble}>
+            <HugeiconsIcon icon={File02Icon} size={28} color="#2D2E3A" />
           </View>
-        ) : null}
-        {downloadError ? (
-          <Text style={styles.errorText}>{downloadError}</Text>
-        ) : null}
-        <View style={styles.actionStack}>
+          <Text style={styles.emptyTitle}>{resolvedTitle}</Text>
+          <Text style={styles.emptySubtitle}>
+            {resolvedFileName && !resolvedFileName.includes(".chunk")
+              ? resolvedFileName
+              : fileExtension
+                ? fileExtension.toUpperCase()
+                : "Document"}
+          </Text>
           {localUri ? (
-            <Pressable style={styles.primaryButton} onPress={openLocalFile}>
-              <Text style={styles.primaryButtonText}>Open file</Text>
+            <View style={styles.statusPill}>
+              <Text style={styles.statusText}>Available offline</Text>
+            </View>
+          ) : null}
+          {downloadError ? (
+            <Text style={styles.errorText}>{downloadError}</Text>
+          ) : null}
+          <View style={styles.actionStack}>
+            {localUri ? (
+              <Pressable style={styles.primaryButton} onPress={openLocalFile}>
+                <Text style={styles.primaryButtonText}>Open file</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                style={[
+                  styles.primaryButton,
+                  isDownloading ? styles.primaryButtonDisabled : null,
+                ]}
+                onPress={downloadForOffline}
+                disabled={isDownloading}
+              >
+                {isDownloading ? (
+                  <View style={styles.buttonLoading}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.primaryButtonText}>Downloading...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.primaryButtonText}>
+                    Download for offline
+                  </Text>
+                )}
+              </Pressable>
+            )}
+            <Pressable style={styles.secondaryButton} onPress={openExternally}>
+              <Text style={styles.secondaryButtonText}>Open in browser</Text>
             </Pressable>
-          ) : (
-            <Pressable
-              style={[
-                styles.primaryButton,
-                isDownloading ? styles.primaryButtonDisabled : null,
-              ]}
-              onPress={downloadForOffline}
-              disabled={isDownloading}
-            >
-              {isDownloading ? (
-                <View style={styles.buttonLoading}>
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                  <Text style={styles.primaryButtonText}>Downloading...</Text>
-                </View>
-              ) : (
-                <Text style={styles.primaryButtonText}>
-                  Download for offline
-                </Text>
-              )}
-            </Pressable>
-          )}
-          <Pressable style={styles.secondaryButton} onPress={openExternally}>
-            <Text style={styles.secondaryButtonText}>Open in browser</Text>
-          </Pressable>
+          </View>
         </View>
-      </View>
       )}
     </SafeAreaView>
   );
