@@ -9,6 +9,8 @@ export type RecentUploadItem = {
   category: string;
   program: string;
   fileName: string;
+  fileUrl: string;
+  fileKey: string;
   mimeType?: string;
   uploadedAt: string;
 };
@@ -28,6 +30,8 @@ const normalizeItems = (value: unknown): RecentUploadItem[] => {
         "category" in item &&
         "program" in item &&
         "fileName" in item &&
+        "fileUrl" in item &&
+        "fileKey" in item &&
         "uploadedAt" in item,
       ),
     )
@@ -37,6 +41,8 @@ const normalizeItems = (value: unknown): RecentUploadItem[] => {
       category: String(item.category),
       program: String(item.program),
       fileName: String(item.fileName ?? ""),
+      fileUrl: String((item as { fileUrl?: string }).fileUrl ?? ""),
+      fileKey: String((item as { fileKey?: string }).fileKey ?? ""),
       mimeType: String((item as { mimeType?: string }).mimeType ?? ""),
       uploadedAt: String(item.uploadedAt),
     }));

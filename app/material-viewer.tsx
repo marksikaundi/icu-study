@@ -18,14 +18,13 @@ import { WebView } from "react-native-webview";
 
 export default function MaterialViewerScreen() {
   const navigation = useNavigation();
-  const { fileUrl, fileKey, title, fileName, mimeType } =
-    useLocalSearchParams<{
-      fileUrl?: string | string[];
-      fileKey?: string | string[];
-      title?: string | string[];
-      fileName?: string | string[];
-      mimeType?: string | string[];
-    }>();
+  const { fileUrl, fileKey, title, fileName, mimeType } = useLocalSearchParams<{
+    fileUrl?: string | string[];
+    fileKey?: string | string[];
+    title?: string | string[];
+    fileName?: string | string[];
+    mimeType?: string | string[];
+  }>();
 
   const resolvedTitle = useMemo(() => {
     if (Array.isArray(title)) {

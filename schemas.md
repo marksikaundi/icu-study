@@ -3,7 +3,8 @@
 title (string, required)
 subtitle (string, required)
 status (string, required) or type (string, required)
-fileId (string, optional)
+fileUrl (string, optional)
+fileKey (string, optional)
 fileName (string, optional)
 
 ## Materials (collection ID: materials)
@@ -11,7 +12,8 @@ fileName (string, optional)
 title (string, required)
 description (string, required) or subtitle (string, required)
 type (string, required) or format (string, required)
-fileId (string, optional)
+fileUrl (string, optional)
+fileKey (string, optional)
 fileName (string, optional)
 
 ## Notes (collection ID: notes)
@@ -26,7 +28,8 @@ title (string, required)
 subtitle (string, required) or summary (string, required) or description (string, required)
 icon (string, required) — one of: archive, book, clipboard, edit-2, edit-3, file, file-text, folder, grid, help-circle, upload, user, bell
 type (string, optional)
-fileId (string, optional)
+fileUrl (string, optional)
+fileKey (string, optional)
 fileName (string, optional)
 programName (string, optional)
 
@@ -37,4 +40,4 @@ programName (string, optional)
 3. Repeat for materials, notes, and resources.
 4. For each column, use type string and set required true/false as listed.
 5. Permissions: allow read for the roles you want to access the app.
-6. Upload files to Storage and copy the file ID into fileId when needed.
+6. Upload files to UploadThing and store the fileUrl + fileKey in your document.
