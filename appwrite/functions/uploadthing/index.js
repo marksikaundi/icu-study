@@ -32,8 +32,7 @@ export default async ({ req, res, log, error }) => {
     const body =
       method === "GET" || method === "HEAD"
         ? undefined
-        : req.bodyRaw ??
-          (req.body ? JSON.stringify(req.body) : undefined);
+        : (req.bodyRaw ?? (req.body ? JSON.stringify(req.body) : undefined));
 
     const requestUrl = buildRequestUrl(req, headers);
     const response = await handler(
