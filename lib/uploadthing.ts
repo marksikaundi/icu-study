@@ -1,5 +1,5 @@
-import { generateReactNativeHelpers } from "@uploadthing/expo";
 import type { UploadRouter } from "@/uploadthing/router";
+import { generateReactNativeHelpers } from "@uploadthing/expo";
 
 export const {
   uploadFiles,

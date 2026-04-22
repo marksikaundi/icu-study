@@ -1,19 +1,13 @@
 import HugeiconsIcon from "@/components/hugeicons-icon";
 import { Fonts } from "@/constants/theme";
-import {
-  account,
-  databases,
-  ID,
-  Permission,
-  Role,
-  storage,
-} from "@/lib/appwrite";
+import { databases, ID, Permission, Role } from "@/lib/appwrite";
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
 import {
   addRecentUpload,
   getRecentUploads,
   type RecentUploadItem,
 } from "@/lib/recent-uploads";
+import { uploadFiles } from "@/lib/uploadthing";
 import {
   AttachmentIcon,
   CloudUploadIcon,
@@ -47,7 +41,6 @@ type SelectedFile = {
 
 export default function UploadContentScreen() {
   const router = useRouter();
-  const chunkSize = 5 * 1024 * 1024;
   const maxFileBytes = 200 * 1024 * 1024;
   const categories = ["Materials", "Resources", "Assignments", "Notes"];
   const tags = useMemo(() => ["Engineering", "Humanities", "Education"], []);
@@ -147,6 +140,26 @@ export default function UploadContentScreen() {
       return "image";
     }
     return "file";
+  };
+
+  const buildUploadFile = async (selected: SelectedFile) => {
+    if (Platform.OS === "web") {
+      if (!selected.webFile) {
+        throw new Error("Web upload requires a browser file.");
+      }
+      return selected.webFile;
+    }
+
+    if (!selected.uri) {
+      throw new Error("Missing file URI for upload.");
+    }
+
+    const response = await fetch(selected.uri);
+    const blob = await response.blob();
+    const file = new File([blob], selected.name || "upload", {
+      type: selected.type ?? blob.type ?? "application/octet-stream",
+    });
+    return Object.assign(file, { uri: selected.uri });
   };
 
   useEffect(() => {
@@ -363,14 +376,6 @@ export default function UploadContentScreen() {
       Alert.alert(
         "Not configured",
         `Set the ${primaryCategory.toLowerCase()} collection ID in lib/appwrite-ids.ts`,
-      );
-      return;
-    }
-
-    if (!APPWRITE_IDS.storageBucketId) {
-      Alert.alert(
-        "Not configured",
-        "Set the storage bucket ID in lib/appwrite-ids.ts",
       );
       return;
     }
