@@ -56,9 +56,7 @@ export default function ChannelInviteScreen() {
             name: String(doc.name ?? doc.title ?? "Channel"),
           }));
           setChannels(mapped);
-          if (!selectedChannelId && mapped[0]) {
-            setSelectedChannelId(mapped[0].id);
-          }
+          setSelectedChannelId((current) => current ?? mapped[0]?.id ?? null);
         }
       } catch {
         if (isActive) {
@@ -76,7 +74,7 @@ export default function ChannelInviteScreen() {
     return () => {
       isActive = false;
     };
-  }, [selectedChannelId]);
+  }, [channelId]);
 
   const handleInvite = async () => {
     const trimmedEmail = email.trim().toLowerCase();
