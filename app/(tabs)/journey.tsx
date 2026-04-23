@@ -26,6 +26,11 @@ type ChannelItem = {
   color: string;
 };
 
+type ChannelMessage = {
+  channelId: string;
+  text: string;
+};
+
 const CHANNEL_COLORS = ["#E6EDFF", "#E7F8E9", "#FFF1D6", "#F4E7FF", "#FCE7F6"];
 
 export default function JourneyScreen() {
@@ -91,7 +96,42 @@ export default function JourneyScreen() {
               ),
             } satisfies ChannelItem;
           });
-          setChannels(mapped);
+          let merged = mapped;
+
+          if (
+            isConfigured(APPWRITE_IDS.collections.channelMessages) &&
+            mapped.length > 0
+          ) {
+            const channelIds = mapped.map((channel) => channel.id);
+            const messagesResponse = await databases.listDocuments(
+              APPWRITE_IDS.databaseId,
+              APPWRITE_IDS.collections.channelMessages,
+              [
+                Query.equal("channelId", channelIds),
+                Query.orderDesc("$createdAt"),
+                Query.limit(80),
+              ],
+            );
+            const latestByChannel = new Map<string, ChannelMessage>();
+            messagesResponse.documents.forEach((doc) => {
+              const channelId = String(doc.channelId ?? "");
+              if (!channelId || latestByChannel.has(channelId)) {
+                return;
+              }
+              const text = String(doc.text ?? doc.message ?? doc.body ?? "");
+              latestByChannel.set(channelId, { channelId, text });
+            });
+
+            merged = mapped.map((channel) => {
+              const latest = latestByChannel.get(channel.id);
+              if (!latest?.text) {
+                return channel;
+              }
+              return { ...channel, lastMessage: latest.text };
+            });
+          }
+
+          setChannels(merged);
         }
       } catch {
         if (isActive) {

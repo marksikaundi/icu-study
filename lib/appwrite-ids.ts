@@ -12,6 +12,7 @@ export const APPWRITE_IDS = {
     resources: "resources",
     channels: "channels",
     channelInvites: "channelInvites",
+    channelMessages: "channelMessages",
   },
 } as const;
 
