@@ -103,7 +103,9 @@ export default function ChannelDetailScreen() {
           }
         }
 
-        const unreadCount = Number(response.unreadCount ?? response.unread ?? 0);
+        const unreadCount = Number(
+          response.unreadCount ?? response.unread ?? 0,
+        );
         if (Number.isFinite(unreadCount) && unreadCount > 0) {
           await databases.updateDocument(
             APPWRITE_IDS.databaseId,
@@ -239,7 +241,10 @@ export default function ChannelDetailScreen() {
             style={styles.input}
           />
           <Pressable
-            style={[styles.sendButton, isSending ? styles.sendButtonBusy : null]}
+            style={[
+              styles.sendButton,
+              isSending ? styles.sendButtonBusy : null,
+            ]}
             onPress={handleSend}
           >
             {isSending ? (
