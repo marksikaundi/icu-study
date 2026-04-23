@@ -14,13 +14,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type ChannelItem = {
@@ -32,13 +26,7 @@ type ChannelItem = {
   color: string;
 };
 
-const CHANNEL_COLORS = [
-  "#E6EDFF",
-  "#E7F8E9",
-  "#FFF1D6",
-  "#F4E7FF",
-  "#FCE7F6",
-];
+const CHANNEL_COLORS = ["#E6EDFF", "#E7F8E9", "#FFF1D6", "#F4E7FF", "#FCE7F6"];
 
 export default function JourneyScreen() {
   const router = useRouter();

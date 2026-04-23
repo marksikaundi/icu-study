@@ -1,4 +1,4 @@
-import { databases, Query } from "@/lib/appwrite";
+import { databases, ID, Query } from "@/lib/appwrite";
 import { APPWRITE_IDS, isConfigured } from "@/lib/appwrite-ids";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -101,7 +101,7 @@ export default function ChannelInviteScreen() {
       await databases.createDocument(
         APPWRITE_IDS.databaseId,
         APPWRITE_IDS.collections.channelInvites,
-        "unique()",
+        ID.unique(),
         {
           channelId: selectedChannelId,
           email: trimmedEmail,

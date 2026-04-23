@@ -89,9 +89,7 @@ export default function ChannelDetailScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        {isLoading ? (
-          <ActivityIndicator size="small" color="#1FAF75" />
-        ) : null}
+        {isLoading ? <ActivityIndicator size="small" color="#1FAF75" /> : null}
         {!isLoading && loadError ? (
           <Text style={styles.helperText}>{loadError}</Text>
         ) : null}
@@ -101,9 +99,7 @@ export default function ChannelDetailScreen() {
               <HugeiconsIcon icon={UserGroupIcon} size={18} color="#1F2937" />
             </View>
             <Text style={styles.title}>{channel.name}</Text>
-            <Text style={styles.subtitle}>
-              {channel.members} members
-            </Text>
+            <Text style={styles.subtitle}>{channel.members} members</Text>
             {channel.description ? (
               <Text style={styles.description}>{channel.description}</Text>
             ) : null}
