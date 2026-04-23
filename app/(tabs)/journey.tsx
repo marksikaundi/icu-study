@@ -158,9 +158,7 @@ export default function JourneyScreen() {
                 id: String(doc.$id),
                 channelId,
                 unreadCount: Number.isFinite(unreadCount) ? unreadCount : 0,
-                lastReadAt: doc.lastReadAt
-                  ? String(doc.lastReadAt)
-                  : null,
+                lastReadAt: doc.lastReadAt ? String(doc.lastReadAt) : null,
               };
             });
             setMembersByChannel(membersMap);
@@ -227,7 +225,10 @@ export default function JourneyScreen() {
   }, [currentUserId]);
 
   useEffect(() => {
-    if (!currentUserId || !isConfigured(APPWRITE_IDS.collections.channelMessages)) {
+    if (
+      !currentUserId ||
+      !isConfigured(APPWRITE_IDS.collections.channelMessages)
+    ) {
       return;
     }
 
@@ -249,10 +250,7 @@ export default function JourneyScreen() {
 
         if (payload?.senderId && payload.senderId !== currentUserId) {
           const member = membersByChannel[channelId];
-          if (
-            member &&
-            isConfigured(APPWRITE_IDS.collections.channelMembers)
-          ) {
+          if (member && isConfigured(APPWRITE_IDS.collections.channelMembers)) {
             const updatedUnread = member.unreadCount + 1;
             setMembersByChannel((current) => ({
               ...current,
