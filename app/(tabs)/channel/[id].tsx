@@ -435,7 +435,8 @@ export default function ChannelDetailScreen() {
         {(() => {
           let lastLabel = "";
           return messages.map((message) => {
-            const isMine = message.senderId && message.senderId === currentUserId;
+            const isMine =
+              message.senderId && message.senderId === currentUserId;
             const dayLabel = formatDayLabel(message.createdAt);
             const showLabel = dayLabel && dayLabel !== lastLabel;
             if (showLabel) {
@@ -469,7 +470,9 @@ export default function ChannelDetailScreen() {
                     ]}
                   >
                     {!isMine ? (
-                      <Text style={styles.messageSender}>{message.senderName}</Text>
+                      <Text style={styles.messageSender}>
+                        {message.senderName}
+                      </Text>
                     ) : null}
                     <Text
                       style={[
