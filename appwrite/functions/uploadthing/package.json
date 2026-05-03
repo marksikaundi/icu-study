@@ -1,9 +1,0 @@
-{
-  "name": "icu-study-uploadthing-function",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "uploadthing": "^7.7.4"
-  }
-}

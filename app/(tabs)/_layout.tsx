@@ -1,74 +1,35 @@
-import { account } from "@/lib/appwrite";
-import { Tabs, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { Tabs } from 'expo-router';
+import React from 'react';
 
-import { CustomTabBar } from "@/components/custom-tab-bar";
+import { HapticTab } from '@/components/haptic-tab';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
-  const router = useRouter();
-  const [isChecking, setIsChecking] = useState(true);
-
-  useEffect(() => {
-    let isActive = true;
-
-    const confirmSession = async () => {
-      try {
-        await account.get();
-      } catch {
-        if (isActive) {
-          router.replace("/auth/sign-in");
-        }
-      } finally {
-        if (isActive) {
-          setIsChecking(false);
-        }
-      }
-    };
-
-    confirmSession();
-
-    return () => {
-      isActive = false;
-    };
-  }, [router]);
-
-  if (isChecking) {
-    return (
-      <View style={styles.screen}>
-        <ActivityIndicator size="small" color="#2D2E3A" />
-      </View>
-    );
-  }
+  const colorScheme = useColorScheme();
 
   return (
     <Tabs
       screenOptions={{
+        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-      }}
-      tabBar={(props) => <CustomTabBar {...props} />}
-    >
-      <Tabs.Screen name="index" options={{ title: "Home" }} />
-      <Tabs.Screen name="explore" options={{ title: "Explore" }} />
-      <Tabs.Screen name="journey" options={{ title: "Chat" }} />
-      <Tabs.Screen name="stats" options={{ title: "Stats" }} />
-      <Tabs.Screen name="profile" options={{ href: null }} />
-      <Tabs.Screen name="materials" options={{ href: null }} />
-      <Tabs.Screen name="resources" options={{ href: null }} />
-      <Tabs.Screen name="assignments" options={{ href: null }} />
-      <Tabs.Screen name="notes" options={{ href: null }} />
-      <Tabs.Screen name="notes-editor" options={{ href: null }} />
-      <Tabs.Screen name="upload-content" options={{ href: null }} />
-      <Tabs.Screen name="recent-uploads" options={{ href: null }} />
+        tabBarButton: HapticTab,
+      }}>
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F4F3F9",
-  },
-});
