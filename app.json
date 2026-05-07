@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "icu-study",
-    "slug": "icu-study",
+    "name": "Campus Market",
+    "slug": "campus-market",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "icustudy",
+    "scheme": "campusmarket",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -27,6 +27,9 @@
     },
     "plugins": [
       "expo-router",
+      "expo-secure-store",
+      "expo-image-picker",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
@@ -40,6 +43,11 @@
         }
       ]
     ],
+    "extra": {
+      "supabaseUrl": "",
+      "supabaseAnonKey": "",
+      "uploadthingToken": ""
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
