@@ -1,6 +1,7 @@
 // Simple localStorage-based planner
 
 const STORAGE_KEY = "smartPlannerTasks";
+const ALLOWED_VIEWS = new Set(["today", "inbox", "upcoming", "meetings", "design"]);
 
 function getTodayISO() {
   return toISODateLocal(new Date());
@@ -78,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectedDateSubheading = document.getElementById("selectedDateSubheading");
   const taskCountBadge = document.getElementById("taskCountBadge");
   const filterButtons = document.querySelectorAll("[data-filter]");
+  const viewButtons = document.querySelectorAll(".sidebar-item[data-view]");
   const sidebarDatePicker = document.getElementById("sidebarDatePicker");
   const sidebarSelectedDateLabel = document.getElementById("sidebarSelectedDateLabel");
   const sidebarTodayBtn = document.getElementById("sidebarTodayBtn");
@@ -90,7 +92,32 @@ document.addEventListener("DOMContentLoaded", () => {
   let tasksByDate = loadAllTasks();
   let currentDate = getTodayISO();
   let currentFilter = "all";
+  let currentView = "today";
   const hasSidebarDatepicker = !!sidebarDatePicker && typeof window.$ === "function";
+
+  function isValidISODate(value) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value);
+  }
+
+  function applyStateFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get("view");
+    const date = params.get("date");
+
+    currentView = ALLOWED_VIEWS.has(view) ? view : "today";
+    currentDate = isValidISODate(date || "") ? date : getTodayISO();
+  }
+
+  function syncUrl(push = false) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", currentView);
+
+    // Keep date in URL to make view state shareable/reload-safe.
+    url.searchParams.set("date", currentDate);
+
+    const method = push ? "pushState" : "replaceState";
+    window.history[method]({}, "", url);
+  }
 
   function syncSidebarLabel() {
     if (!sidebarSelectedDateLabel) return;
@@ -103,6 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.$(sidebarDatePicker).datepicker("update", currentDate);
   }
 
+  applyStateFromUrl();
   datePicker.value = currentDate;
 
   function getTasksForDate(dateISO) {
@@ -114,8 +142,96 @@ document.addEventListener("DOMContentLoaded", () => {
     saveAllTasks(tasksByDate);
   }
 
+  function getAllTasksWithDate() {
+    const all = [];
+    Object.entries(tasksByDate).forEach(([dateISO, tasks]) => {
+      tasks.forEach((task) => {
+        all.push({ ...task, __date: dateISO });
+      });
+    });
+    return all;
+  }
+
+  function getTasksForCurrentView() {
+    const todayISO = getTodayISO();
+    const all = getAllTasksWithDate();
+
+    switch (currentView) {
+      case "today":
+        return getTasksForDate(currentDate).map((task) => ({ ...task, __date: currentDate }));
+      case "inbox":
+        return all;
+      case "upcoming":
+        return all.filter((task) => task.__date > todayISO);
+      case "meetings":
+        return all.filter((task) => (task.category || "").toLowerCase() === "meetings");
+      case "design":
+        return all.filter((task) => (task.category || "").toLowerCase() === "design");
+      default:
+        return getTasksForDate(currentDate).map((task) => ({ ...task, __date: currentDate }));
+    }
+  }
+
+  function mutateTaskById(taskId, updater) {
+    Object.keys(tasksByDate).forEach((dateISO) => {
+      const updated = tasksByDate[dateISO].map((task) => (task.id === taskId ? updater(task, dateISO) : task));
+      tasksByDate[dateISO] = updated;
+    });
+    saveAllTasks(tasksByDate);
+  }
+
+  function getViewTitle() {
+    switch (currentView) {
+      case "today":
+        return formatReadableDate(currentDate);
+      case "inbox":
+        return "Inbox";
+      case "upcoming":
+        return "Upcoming";
+      case "meetings":
+        return "Meetings";
+      case "design":
+        return "Design";
+      default:
+        return formatReadableDate(currentDate);
+    }
+  }
+
+  function getViewSubtitle() {
+    switch (currentView) {
+      case "today":
+        return formatSubheading(currentDate);
+      case "inbox":
+        return "All plans";
+      case "upcoming":
+        return "Plans after today";
+      case "meetings":
+        return "Meeting-related plans";
+      case "design":
+        return "Design-related plans";
+      default:
+        return formatSubheading(currentDate);
+    }
+  }
+
+  function isDateScopedView() {
+    return currentView === "today";
+  }
+
+  function updateViewUIState() {
+    viewButtons.forEach((button) => {
+      const isActive = button.getAttribute("data-view") === currentView;
+      button.classList.toggle("active", isActive);
+    });
+
+    if (clearDayBtn) {
+      clearDayBtn.disabled = !isDateScopedView();
+      clearDayBtn.title = isDateScopedView() ? "" : "Switch to Today to clear by day";
+    }
+  }
+
   function renderTasks() {
-    const tasks = getTasksForDate(currentDate);
+    const tasks = getTasksForCurrentView();
     const completedCount = tasks.filter((t) => t.completed).length;
     const progressValue = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
     const filtered = tasks.filter((t) => {
@@ -135,6 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
     filtered
       .slice()
       .sort((a, b) => {
+        if (a.__date !== b.__date) return a.__date.localeCompare(b.__date);
         if (!a.time && !b.time) return 0;
         if (!a.time) return 1;
         if (!b.time) return -1;
@@ -180,6 +297,13 @@ document.addEventListener("DOMContentLoaded", () => {
           timeSpan.className = "text-secondary task-time d-inline-block";
           timeSpan.textContent = task.time;
           content.appendChild(timeSpan);
+        }
+
+        if (!isDateScopedView()) {
+          const dateSpan = document.createElement("span");
+          dateSpan.className = "text-secondary d-inline-block ms-2";
+          dateSpan.textContent = formatReadableDate(task.__date);
+          content.appendChild(dateSpan);
         }
 
         left.appendChild(checkbox);
@@ -241,25 +365,28 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function deleteTask(id) {
-    const tasks = getTasksForDate(currentDate).filter((t) => t.id !== id);
-    setTasksForDate(currentDate, tasks);
+    Object.keys(tasksByDate).forEach((dateISO) => {
+      tasksByDate[dateISO] = tasksByDate[dateISO].filter((t) => t.id !== id);
+    });
+    saveAllTasks(tasksByDate);
     renderTasks();
   }
 
   function toggleTaskCompletion(id) {
-    const tasks = getTasksForDate(currentDate).map((t) =>
-      t.id === id ? { ...t, completed: !t.completed } : t
-    );
-    setTasksForDate(currentDate, tasks);
+    mutateTaskById(id, (task) => ({ ...task, completed: !task.completed }));
     renderTasks();
   }
 
   function setFocusTask(id) {
-    const tasks = getTasksForDate(currentDate).map((t) => ({
-      ...t,
-      focus: t.id === id,
+    const sourceTask = getAllTasksWithDate().find((task) => task.id === id);
+    if (!sourceTask) return;
+
+    const targetDate = sourceTask.__date;
+    const tasks = getTasksForDate(targetDate).map((task) => ({
+      ...task,
+      focus: task.id === id,
     }));
-    setTasksForDate(currentDate, tasks);
+    setTasksForDate(targetDate, tasks);
     renderTasks();
   }
 
@@ -281,8 +408,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateHeader() {
-    selectedDateHeading.textContent = formatReadableDate(currentDate);
-    selectedDateSubheading.textContent = formatSubheading(currentDate);
+    selectedDateHeading.textContent = getViewTitle();
+    selectedDateSubheading.textContent = getViewSubtitle();
+    updateViewUIState();
   }
 
   taskForm.addEventListener("submit", (e) => {
@@ -292,20 +420,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   datePicker.addEventListener("change", () => {
     currentDate = datePicker.value || getTodayISO();
+    currentView = "today";
     updateHeader();
     syncSidebarPickerFromCurrentDate();
-    renderTasks();
-  });
-
-  todayBtn.addEventListener("click", () => {
-    currentDate = getTodayISO();
-    datePicker.value = currentDate;
-    updateHeader();
-    syncSidebarPickerFromCurrentDate();
+    syncUrl();
     renderTasks();
   });
 
   clearDayBtn.addEventListener("click", () => {
+    if (!isDateScopedView()) return;
     if (!confirm("Clear all tasks for this day?")) return;
     setTasksForDate(currentDate, []);
     renderTasks();
@@ -316,6 +439,24 @@ document.addEventListener("DOMContentLoaded", () => {
       filterButtons.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       currentFilter = btn.getAttribute("data-filter");
+      renderTasks();
+    });
+  });
+
+  viewButtons.forEach((button) => {
+    button.addEventListener("click", (e) => {
+      e.preventDefault();
+      const nextView = button.getAttribute("data-view");
+      if (!nextView) return;
+
+      currentView = nextView;
+      if (currentView === "today") {
+        currentDate = getTodayISO();
+        datePicker.value = currentDate;
+        syncSidebarPickerFromCurrentDate();
+      }
+      updateHeader();
+      syncUrl(true);
       renderTasks();
     });
   });
@@ -336,8 +477,10 @@ document.addEventListener("DOMContentLoaded", () => {
       // e.format is provided by bootstrap-datepicker.
       const next = e.format ? e.format("yyyy-mm-dd") : currentDate;
       currentDate = next || getTodayISO();
+      currentView = "today";
       datePicker.value = currentDate;
       updateHeader();
+      syncUrl();
       renderTasks();
     });
   } else {
@@ -348,14 +491,25 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sidebarTodayBtn) {
     sidebarTodayBtn.addEventListener("click", () => {
       currentDate = getTodayISO();
+      currentView = "today";
       datePicker.value = currentDate;
       syncSidebarPickerFromCurrentDate();
       updateHeader();
+      syncUrl();
       renderTasks();
     });
   }
 
+  window.addEventListener("popstate", () => {
+    applyStateFromUrl();
+    datePicker.value = currentDate;
+    syncSidebarPickerFromCurrentDate();
+    updateHeader();
+    renderTasks();
+  });
+
   updateHeader();
+  syncUrl();
   renderTasks();
 });
 
