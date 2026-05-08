@@ -83,6 +83,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const sidebarTodayBtn = document.getElementById("sidebarTodayBtn");
   const focusTaskText = document.getElementById("focusTaskText");
   const focusInfo = document.getElementById("focusInfo");
+  const totalTasksStat = document.getElementById("totalTasksStat");
+  const completedTasksStat = document.getElementById("completedTasksStat");
+  const progressStat = document.getElementById("progressStat");
 
   let tasksByDate = loadAllTasks();
   let currentDate = getTodayISO();
@@ -113,6 +116,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderTasks() {
     const tasks = getTasksForDate(currentDate);
+    const completedCount = tasks.filter((t) => t.completed).length;
+    const progressValue = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
     const filtered = tasks.filter((t) => {
       if (currentFilter === "pending") return !t.completed;
       if (currentFilter === "done") return t.completed;
@@ -138,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .forEach((task) => {
         const li = document.createElement("li");
         li.className =
-          "list-group-item d-flex justify-content-between align-items-start py-2 px-3 small";
+          "list-group-item planner-task-row d-flex justify-content-between align-items-start py-2 px-3 small";
         if (task.completed) {
           li.classList.add("completed");
         }
@@ -204,6 +209,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
     taskCountBadge.textContent = `${tasks.length} task${tasks.length === 1 ? "" : "s"}`;
+    if (totalTasksStat) totalTasksStat.textContent = String(tasks.length);
+    if (completedTasksStat) completedTasksStat.textContent = String(completedCount);
+    if (progressStat) progressStat.textContent = `${progressValue}%`;
     updateFocusInfo();
     syncSidebarLabel();
   }
