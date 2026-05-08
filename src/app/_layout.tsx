@@ -38,8 +38,8 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="listing/[id]" options={{ presentation: "card" }} />
-          <Stack.Screen name="chat/[id]" options={{ presentation: "card" }} />
+          <Stack.Screen name="listing" options={{ presentation: "card" }} />
+          <Stack.Screen name="chat" options={{ presentation: "card" }} />
         </Stack>
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       </ThemeProvider>

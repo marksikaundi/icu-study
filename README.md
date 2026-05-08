@@ -17,15 +17,22 @@ Campus-focused marketplace app built with Expo Router, TypeScript, NativeWind, Z
 
 ## Folder Architecture
 
-- `app/` routes (auth, onboarding, tabs, listing detail, chat)
-- `src/components/` reusable UI blocks
-- `src/config/` runtime environment helpers
-- `src/hooks/` routing and behavior hooks
-- `src/lib/` sdk clients (Supabase)
-- `src/services/` API abstraction layer + upload helpers
-- `src/state/` Zustand stores
-- `src/types/` domain models
-- `supabase/schema.sql` database models + policies
+All application code lives under **`src/`**. Expo Router uses **`src/app/`** (see [Expo src directory](https://docs.expo.dev/router/reference/src-directory/)).
+
+- `src/app/` — file-based routes (auth, onboarding, tabs, listing detail, chat)
+- `src/components/` — reusable UI (including legacy themed helpers used by `explore`)
+- `src/config/` — environment helpers
+- `src/hooks/` — shared hooks (color scheme, theme)
+- `src/constants/` — theme tokens
+- `src/lib/` — SDK clients (Supabase), notification bootstrap
+- `src/providers/` — app-level providers (React Query, safe area)
+- `src/services/` — API layer + uploads
+- `src/state/` — Zustand stores
+- `src/types/` — shared TypeScript models
+
+Root keeps **config-only** files: `app.json`, `babel.config.js`, `tailwind.config.js`, `global.css`, `assets/`, `supabase/`, `package.json`.
+
+Path alias: `@/*` → `./src/*` (see `tsconfig.json`).
 
 ## Environment Setup
 
