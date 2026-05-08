@@ -481,6 +481,70 @@ body {
   padding: 0.3rem 0.7rem;
 }
 
+.dashboard-page.dark-mode {
+  background: #1a1530;
+  color: #e8e9ee;
+}
+
+.dashboard-page.dark-mode .dashboard-sidebar {
+  background: #201744;
+}
+
+.dashboard-page.dark-mode .dashboard-main {
+  background: #151926;
+  border-color: #30374b;
+}
+
+.dashboard-page.dark-mode .dashboard-header {
+  border-bottom-color: #2f364a;
+}
+
+.dashboard-page.dark-mode #selectedDateHeading {
+  color: #edf1ff;
+}
+
+.dashboard-page.dark-mode #selectedDateSubheading,
+.dashboard-page.dark-mode .text-muted {
+  color: #9ca7c2 !important;
+}
+
+.dashboard-page.dark-mode .stat-card,
+.dashboard-page.dark-mode .projects-panel,
+.dashboard-page.dark-mode .focus-inline-box {
+  background: #1b2132;
+  border-color: #30374b;
+}
+
+.dashboard-page.dark-mode .stat-number,
+.dashboard-page.dark-mode .projects-head h5,
+.dashboard-page.dark-mode .project-task-list .list-group-item {
+  color: #eef2ff;
+}
+
+.dashboard-page.dark-mode .stat-label {
+  color: #b4bfd8;
+}
+
+.dashboard-page.dark-mode .task-form .form-control,
+.dashboard-page.dark-mode .task-form .form-select,
+.dashboard-page.dark-mode .date-input {
+  background: #141a2a !important;
+  color: #e8ecf8 !important;
+  border-color: #35405a !important;
+}
+
+.dashboard-page.dark-mode .project-task-list .badge {
+  background: #242d44 !important;
+  border-color: #36415e;
+  color: #d8e1ff !important;
+}
+
+.dashboard-page.dark-mode .icon-btn-light {
+  background: #1b2132;
+  border-color: #38435d;
+  color: #d7ddf2;
+}
+
 .dashboard-page .stats-grid {
   margin-top: 1rem;
   display: grid;
@@ -583,6 +647,13 @@ body {
   letter-spacing: 0;
   font-size: 0.78rem;
   text-transform: none;
+}
+
+.dashboard-page .task-highlight {
+  background: #ffe08a;
+  color: #171717;
+  border-radius: 4px;
+  padding: 0 0.18rem;
 }
 
 .dashboard-page .project-task-list .btn-outline-info,

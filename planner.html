@@ -37,16 +37,6 @@
           </div>
         </div>
 
-        <div class="sidebar-search-wrap">
-          <div class="search-shell">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" class="form-control sidebar-search" placeholder="Search..." />
-            <button type="button" class="search-edit-btn" aria-label="Edit">
-              <i class="fa-solid fa-pen"></i>
-            </button>
-          </div>
-        </div>
-
         <nav class="sidebar-nav">
           <a class="sidebar-item sidebar-item-muted" href="#">
             <i class="fa-regular fa-square-plus"></i>
@@ -80,9 +70,9 @@
 
         <div class="sidebar-bottom">
           <div class="sidebar-user">
-            <div class="user-avatar">MJ</div>
+            <!-- <div class="user-avatar">MJ</div> -->
             <div>
-              <div class="small fw-semibold text-white">Michelle John</div>
+              <div class="small fw-semibold text-white">Today's Date</div>
               <div class="small text-white-50"><span id="sidebarSelectedDateLabel">—</span></div>
             </div>
           </div>
@@ -98,10 +88,10 @@
           <div class="dashboard-actions">
             <input type="date" id="datePicker" class="d-none" />
             <input type="text" id="sidebarDatePicker" class="form-control form-control-sm date-input" />
-            <button id="sidebarTodayBtn" class="icon-btn-light" type="button" aria-label="Today">
+            <button id="themeToggleBtn" class="icon-btn-light" type="button" aria-label="Toggle theme">
               <i class="fa-regular fa-moon"></i>
             </button>
-            <button type="button" class="btn btn-danger btn-sm add-task-pill">
+            <button id="quickAddTaskBtn" type="button" class="btn btn-danger btn-sm add-task-pill">
               <i class="fa-solid fa-circle-plus me-1"></i>
               Add Task
             </button>

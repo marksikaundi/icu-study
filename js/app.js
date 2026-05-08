@@ -1,6 +1,7 @@
 // Simple localStorage-based planner
 
 const STORAGE_KEY = "smartPlannerTasks";
+const THEME_STORAGE_KEY = "smartPlannerTheme";
 const ALLOWED_VIEWS = new Set(["today", "inbox", "upcoming", "meetings", "design"]);
 
 function getTodayISO() {
@@ -89,7 +90,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const viewButtons = document.querySelectorAll(".sidebar-item[data-view]");
   const sidebarDatePicker = document.getElementById("sidebarDatePicker");
   const sidebarSelectedDateLabel = document.getElementById("sidebarSelectedDateLabel");
-  const sidebarTodayBtn = document.getElementById("sidebarTodayBtn");
+  const themeToggleBtn = document.getElementById("themeToggleBtn");
+  const quickAddTaskBtn = document.getElementById("quickAddTaskBtn");
   const focusTaskText = document.getElementById("focusTaskText");
   const focusInfo = document.getElementById("focusInfo");
   const totalTasksStat = document.getElementById("totalTasksStat");
@@ -137,8 +139,29 @@ document.addEventListener("DOMContentLoaded", () => {
     window.$(sidebarDatePicker).datepicker("update", currentDate);
   }
 
+  function applyTheme(theme) {
+    const isDark = theme === "dark";
+    document.body.classList.toggle("dark-mode", isDark);
+    localStorage.setItem(THEME_STORAGE_KEY, isDark ? "dark" : "light");
+
+    if (themeToggleBtn) {
+      const icon = themeToggleBtn.querySelector("i");
+      if (icon) {
+        icon.className = isDark ? "fa-regular fa-sun" : "fa-regular fa-moon";
+      }
+      themeToggleBtn.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+      themeToggleBtn.title = isDark ? "Light mode" : "Dark mode";
+    }
+  }
+
+  function toggleTheme() {
+    const isDark = document.body.classList.contains("dark-mode");
+    applyTheme(isDark ? "light" : "dark");
+  }
+
   applyStateFromUrl();
   datePicker.value = currentDate;
+  applyTheme(localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light");
 
   function getTasksForDate(dateISO) {
     return tasksByDate[dateISO] || [];
@@ -251,6 +274,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (filtered.length === 0) {
       emptyState.classList.remove("d-none");
+      emptyState.textContent = "No tasks yet for this day. Add your first task above.";
     } else {
       emptyState.classList.add("d-none");
     }
@@ -417,6 +441,18 @@ document.addEventListener("DOMContentLoaded", () => {
     addTask();
   });
 
+  if (quickAddTaskBtn) {
+    quickAddTaskBtn.addEventListener("click", () => {
+      const hasTitle = taskTitleInput.value.trim().length > 0;
+      if (!hasTitle) {
+        taskTitleInput.focus();
+        taskTitleInput.setAttribute("placeholder", "Enter task title first...");
+        return;
+      }
+      addTask();
+    });
+  }
+
   datePicker.addEventListener("change", () => {
     currentDate = datePicker.value || getTodayISO();
     currentView = "today";
@@ -487,16 +523,8 @@ document.addEventListener("DOMContentLoaded", () => {
     syncSidebarLabel();
   }
 
-  if (sidebarTodayBtn) {
-    sidebarTodayBtn.addEventListener("click", () => {
-      currentDate = getTodayISO();
-      currentView = "today";
-      datePicker.value = currentDate;
-      syncSidebarPickerFromCurrentDate();
-      updateHeader();
-      syncUrl();
-      renderTasks();
-    });
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", toggleTheme);
   }
 
   window.addEventListener("popstate", () => {
