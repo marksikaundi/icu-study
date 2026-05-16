@@ -1,51 +1,21 @@
-// Simple localStorage-based planner
+// Simple localStorage-based planner (loads js/planner-common.js first)
 
-const STORAGE_KEY = "smartPlannerTasks";
 const THEME_STORAGE_KEY = "smartPlannerTheme";
 const ACTIVE_TIMER_KEY = "smartPlannerActiveTimer";
 const ALLOWED_VIEWS = new Set(["today", "inbox", "upcoming", "meetings", "design"]);
 
-function getTodayISO() {
-  return toISODateLocal(new Date());
-}
-
-function toISODateLocal(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function parseISODateLocal(isoDate) {
-  const [y, m, d] = isoDate.split("-").map((n) => Number(n));
-  return new Date(y, m - 1, d);
-}
-
-function startOfLocalDay(d) {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
-
-function loadAllTasks() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return {};
-    Object.keys(parsed).forEach((dateISO) => {
-      const list = parsed[dateISO];
-      if (!Array.isArray(list)) return;
-      parsed[dateISO] = list.map((task) => ({
-        ...task,
-        loggedSeconds: typeof task.loggedSeconds === "number" && !Number.isNaN(task.loggedSeconds) ? task.loggedSeconds : 0,
-      }));
-    });
-    return parsed;
-  } catch (e) {
-    console.error("Failed to parse tasks from localStorage", e);
-    return {};
-  }
+/**
+ * @param {Record<string, unknown>} entry
+ */
+function appendActivity(entry) {
+  const row = {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    t: Date.now(),
+    ...entry,
+  };
+  const log = loadActivityLog();
+  log.unshift(row);
+  localStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(log.slice(0, ACTIVITY_LOG_MAX)));
 }
 
 function saveAllTasks(tasksByDate) {
@@ -54,15 +24,6 @@ function saveAllTasks(tasksByDate) {
 
 function generateId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function formatReadableDate(isoDate) {
-  const d = parseISODateLocal(isoDate);
-  return d.toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 function formatSubheading(isoDate) {
@@ -81,17 +42,6 @@ function formatTaskMeta(isoDate, timeText) {
   const datePart = date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   if (timeText) return `${datePart} · ${timeText}`;
   return `${datePart} · 30 m`;
-}
-
-function formatTrackedDuration(totalSeconds) {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-  }
-  return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
 function readActiveTimer() {
@@ -223,6 +173,13 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     tasks.push(newTask);
     setTasksForDate(dateISO, tasks);
+    appendActivity({
+      type: "task_created",
+      taskId: newTask.id,
+      title: newTask.title,
+      dateISO,
+      category: newTask.category,
+    });
   }
 
   function applyTheme(theme) {
@@ -298,12 +255,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const add = Math.floor((Date.now() - state.segmentStart) / 1000);
     if (add > 0) {
+      const taskSnap = findTaskById(state.taskId);
       const tasks = getTasksForDate(dateISO).map((t) =>
         t.id === state.taskId
           ? { ...t, loggedSeconds: (typeof t.loggedSeconds === "number" ? t.loggedSeconds : 0) + add }
           : t,
       );
       setTasksForDate(dateISO, tasks);
+      if (taskSnap) {
+        appendActivity({
+          type: "time_logged",
+          seconds: add,
+          title: taskSnap.title,
+          taskId: state.taskId,
+          dateISO,
+        });
+      }
     }
     writeActiveTimer(null);
     if (timerDisplayInterval) {
@@ -606,20 +573,42 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function deleteTask(id) {
+    const snap = findTaskById(id);
+    const dateISO = findDateForTaskId(id);
     clearActiveTimerForTask(id);
-    Object.keys(tasksByDate).forEach((dateISO) => {
-      tasksByDate[dateISO] = tasksByDate[dateISO].filter((t) => t.id !== id);
+    Object.keys(tasksByDate).forEach((dateKey) => {
+      tasksByDate[dateKey] = tasksByDate[dateKey].filter((t) => t.id !== id);
     });
     saveAllTasks(tasksByDate);
+    if (snap) {
+      appendActivity({
+        type: "task_deleted",
+        taskId: id,
+        title: snap.title,
+        dateISO: dateISO || undefined,
+      });
+    }
     renderTasks();
   }
 
   function toggleTaskCompletion(id) {
+    const before = findTaskById(id);
+    if (!before) return;
+    const dateForTask = findDateForTaskId(id);
     const state = readActiveTimer();
     if (state && state.taskId === id) {
       commitActiveSegment();
     }
+    const wasCompleted = !!before?.completed;
     mutateTaskById(id, (task) => ({ ...task, completed: !task.completed }));
+    if (before) {
+      appendActivity({
+        type: !wasCompleted ? "task_completed" : "task_reopened",
+        taskId: id,
+        title: before.title,
+        dateISO: dateForTask || undefined,
+      });
+    }
     renderTasks();
   }
 
@@ -633,6 +622,12 @@ document.addEventListener("DOMContentLoaded", () => {
       focus: task.id === id,
     }));
     setTasksForDate(targetDate, tasks);
+    appendActivity({
+      type: "focus_set",
+      taskId: id,
+      title: sourceTask.title,
+      dateISO: targetDate,
+    });
     renderTasks();
   }
 
@@ -731,7 +726,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
     }
+    const clearedCount = getTasksForDate(currentDate).length;
     setTasksForDate(currentDate, []);
+    if (clearedCount > 0) {
+      appendActivity({
+        type: "day_cleared",
+        dateISO: currentDate,
+        count: clearedCount,
+      });
+    }
     renderTasks();
   });
 
